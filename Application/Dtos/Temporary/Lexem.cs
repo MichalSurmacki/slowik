@@ -6,20 +6,14 @@ using System.Xml.Serialization;
 
 namespace Application.Dtos.Temporary
 {
+    [XmlRoot("lex")]
     public class Lexem : IXmlSerializable
     {
-        public int Id { get; set; }
-
         public string Base { get; set; }
 
-        public CTag CTag { get; set; }
+        public string CTag { get; set; }
 
         public int Disamb { get; set; }
-
-        public Lexem()
-        {
-            CTag = new CTag();
-        }
 
         public XmlSchema GetSchema()
         {
@@ -42,10 +36,10 @@ namespace Application.Dtos.Temporary
             //ctag tag
             if (reader.IsStartElement())
             {
-                CTag.TagNKJP = reader.ReadElementContentAsString();
+                CTag = reader.ReadElementContentAsString();
             }
 
-            if (reader.NodeType == XmlNodeType.EndElement)
+            if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
             {
                 reader.Skip();
             }

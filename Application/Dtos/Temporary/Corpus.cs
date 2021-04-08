@@ -40,7 +40,7 @@ namespace Application.Dtos.Temporary
                 Chunks.Add(chnk);
             }
 
-            if (reader.NodeType == XmlNodeType.EndElement)
+            if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
             {
                 reader.Skip();
             }

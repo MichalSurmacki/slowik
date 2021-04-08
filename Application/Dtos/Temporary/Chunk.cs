@@ -7,12 +7,18 @@ using System.Xml.Serialization;
 
 namespace Application.Dtos.Temporary
 {
+    [XmlRoot("chunk")]
     public class Chunk : IXmlSerializable
     {
         public int Id { get; set; }
         public List<Sentence> Sentences { get; set; }
 
         private CorpusMetaData _corpusMetaData;
+
+        public Chunk()
+        {
+            Sentences = new List<Sentence>();
+        }
 
         public Chunk(ref CorpusMetaData corpusMetaData)
         {
@@ -33,16 +39,16 @@ namespace Application.Dtos.Temporary
             int _id;
             if (Int32.TryParse(_xml_id, out _id)) Id = _id;
 
-            _corpusMetaData.NumberOfChunks += 1;
+            if(_corpusMetaData != null) _corpusMetaData.NumberOfChunks += 1;
 
             while (reader.Read() && reader.IsStartElement())
             {
-                Sentence stc = new Sentence(ref _corpusMetaData);
+                Sentence stc = _corpusMetaData != null ? new Sentence(ref _corpusMetaData) : new Sentence();
                 stc.ReadXml(reader.ReadSubtree());
                 Sentences.Add(stc);
             }
 
-            if (reader.NodeType == XmlNodeType.EndElement)
+            if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
             {
                 reader.Skip();
             }

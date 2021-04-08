@@ -6,6 +6,7 @@ using System.Xml.Serialization;
 
 namespace Application.Dtos.Temporary
 {
+    [XmlRoot("sentence")]
     public class Sentence : IXmlSerializable
     {
         public int Id { get; set; }
@@ -17,6 +18,11 @@ namespace Application.Dtos.Temporary
         public int ChunkId { get; set; }
 
         private CorpusMetaData _corpusMetaData;
+
+        public Sentence()
+        {
+            Tokens = new List<Token>();
+        }
 
         public Sentence(ref CorpusMetaData corpusMetaData)
         {
@@ -38,7 +44,8 @@ namespace Application.Dtos.Temporary
             int _id;
             if (Int32.TryParse(_xml_id, out _id)) Id = _id;
 
-            _corpusMetaData.NumberOfSentences += 1;
+            if(_corpusMetaData != null) _corpusMetaData.NumberOfSentences += 1;
+            
             bool ns = false;
 
             //tok/ns tags
@@ -47,7 +54,8 @@ namespace Application.Dtos.Temporary
                 switch (reader.Name)
                 {
                     case "tok":
-                        Token tok = new Token(ref _corpusMetaData, ns);
+                        Token tok;
+                        tok = _corpusMetaData != null ? new Token(ref _corpusMetaData, ns) : new Token();
                         tok.ReadXml(reader.ReadSubtree());
                         Tokens.Add(tok);
                         ns = false;
@@ -60,7 +68,7 @@ namespace Application.Dtos.Temporary
                 }
             }
 
-            if (reader.NodeType == XmlNodeType.EndElement)
+            if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
             {
                 reader.Skip();
             }

@@ -6,15 +6,24 @@ using System.Xml.Serialization;
 
 namespace Application.Dtos.Temporary
 {
+    [XmlRoot("tok")]
     public class Token : IXmlSerializable
     {
-        public int Id { get; set; }
 
         public string Orth { get; set; }
 
         public List<Lexem> Lexems { get; set; }
 
+        public bool NoSpaceBefore { get; set; }
+
         private CorpusMetaData _corpusMetaData;
+
+        public Token()
+        {
+            NoSpaceBefore = false;
+            _corpusMetaData = null;
+            Lexems = new List<Lexem>();
+        }
 
         public Token(ref CorpusMetaData corpusMetaData, bool noSpaceBefore = false)
         {
@@ -22,9 +31,6 @@ namespace Application.Dtos.Temporary
             _corpusMetaData = corpusMetaData;
             Lexems = new List<Lexem>();
         }
-
-        //if token has leading space true else false
-        public bool NoSpaceBefore { get; set; }
 
         public XmlSchema GetSchema()
         {
@@ -41,17 +47,21 @@ namespace Application.Dtos.Temporary
                 Orth = reader.ReadElementContentAsString();
             }
 
-            _corpusMetaData.NumberOfTokens += 1;
-            //if word isn't in lookUpDictionary
-            if(_corpusMetaData.WordsLookupDictionary.ContainsKey(Orth))
+            //if string is parsed first time
+            if (_corpusMetaData != null)
             {
-                _corpusMetaData.WordsLookupDictionary[Orth].Add(_corpusMetaData.NumberOfChunks);    
-            }
-            else
-            {
-                var list = new List<int>();
-                list.Add(_corpusMetaData.NumberOfChunks);
-                _corpusMetaData.WordsLookupDictionary.Add(Orth, list);
+                _corpusMetaData.NumberOfTokens += 1;
+                //if word isn't in lookUpDictionary
+                if (_corpusMetaData.WordsLookupDictionary.ContainsKey(Orth))
+                {
+                    _corpusMetaData.WordsLookupDictionary[Orth].Add(_corpusMetaData.NumberOfChunks);
+                }
+                else
+                {
+                    var list = new List<int>();
+                    list.Add(_corpusMetaData.NumberOfChunks);
+                    _corpusMetaData.WordsLookupDictionary.Add(Orth, list);
+                }
             }
 
             //lex tags
@@ -61,7 +71,7 @@ namespace Application.Dtos.Temporary
                 lex.ReadXml(reader.ReadSubtree());
                 Lexems.Add(lex);
 
-                if (reader.NodeType == XmlNodeType.EndElement)
+                if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
                 {
                     reader.Skip();
                 }
