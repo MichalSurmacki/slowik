@@ -12,6 +12,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Application;
 using Infrastructure;
+using Api.CasheSettings;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace Api
 {
@@ -32,6 +35,11 @@ namespace Api
             // DependencyInjection.cs in Application and Infrastructure
             services.AddApplication();
             services.AddInfrastructure(Configuration);
+            services.AddMemoryCache();
+            services.AddSingleton<CorpusCashe>();
+
+            services.AddDbContext<SlowikContext>(options =>options.UseSqlServer(Configuration.GetConnectionString("ApiCorpusContext")));
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
