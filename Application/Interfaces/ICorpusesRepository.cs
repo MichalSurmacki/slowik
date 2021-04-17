@@ -5,8 +5,8 @@ namespace Application.Interfaces
 {
     public interface ICorpusesRepository
     {
-        Chunk GetChunkByCorpusId(Guid corpusId, int chunkId);
-        Sentence GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId);
-        void CreateCorpusMetaData(Corpus corpus);
+        ChunkDto GetChunkByCorpusId(Guid corpusId, int chunkId);
+        SentenceDto GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId);
+        void CreateCorpusMetaData(ChunkListDto corpus);
     }
 }

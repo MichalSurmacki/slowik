@@ -27,13 +27,13 @@ namespace Application.Tests
         public void Lexem_ReadXml_ShouldDeserializeXML(string expectedBase, string expectedCtag, int expectedDisamb, string xml)
         {
             // Arange
-            XmlSerializer serializer = new XmlSerializer(typeof(Lexem));
-            Lexem result;
+            XmlSerializer serializer = new XmlSerializer(typeof(LexemDto));
+            LexemDto result;
 
             // Act
             using (StringReader fileStream = new StringReader(xml))
             {
-                result = (Lexem)serializer.Deserialize(fileStream);
+                result = (LexemDto)serializer.Deserialize(fileStream);
             }
 
             // Assert
@@ -64,13 +64,13 @@ namespace Application.Tests
         public void Token_ReadXml_ShouldDeserializeXMLWithoutCorpusMetaData(string expectedOrth, int expectedNumberOfLexems, string xml)
         {
             // Arange
-            XmlSerializer serializer = new XmlSerializer(typeof(Token));
-            Token result;
+            XmlSerializer serializer = new XmlSerializer(typeof(TokenDto));
+            TokenDto result;
 
             // Act
             using (StringReader fileStream = new StringReader(xml))
             {
-                result = (Token)serializer.Deserialize(fileStream);
+                result = (TokenDto)serializer.Deserialize(fileStream);
             }
 
             // Assert
@@ -119,13 +119,13 @@ namespace Application.Tests
         public void Sentence_ReadXml_ShouldDeserializeXMLWithoutCorpusMetaData(int expectedSentenceId, int expectedNumberOfTokens, string xml)
         {
             // Arange
-            XmlSerializer serializer = new XmlSerializer(typeof(Sentence));
-            Sentence result;
+            XmlSerializer serializer = new XmlSerializer(typeof(SentenceDto));
+            SentenceDto result;
 
             // Act
             using (StringReader fileStream = new StringReader(xml))
             {
-                result = (Sentence)serializer.Deserialize(fileStream);
+                result = (SentenceDto)serializer.Deserialize(fileStream);
             }
 
             // Assert
@@ -166,13 +166,13 @@ namespace Application.Tests
         public void Chunk_ReadXml_ShouldDeserializeXMLWithoutCorpusMetaData(int expectedChunkId, int expectedNumberOfSentences, string xml)
         {
             // Arange
-            XmlSerializer serializer = new XmlSerializer(typeof(Chunk));
-            Chunk result;
+            XmlSerializer serializer = new XmlSerializer(typeof(ChunkDto));
+            ChunkDto result;
 
             // Act
             using (StringReader fileStream = new StringReader(xml))
             {
-                result = (Chunk)serializer.Deserialize(fileStream);
+                result = (ChunkDto)serializer.Deserialize(fileStream);
             }
 
             // Assert
@@ -218,13 +218,13 @@ namespace Application.Tests
         public void Corpus_ReadXml_ShouldDeserializeXMLWithoutCorpusMetadata(int expectedNumberOfChunks, string xml)
         {
             // Arrange
-            XmlSerializer serializer = new XmlSerializer(typeof(Corpus));
-            Corpus result;
+            XmlSerializer serializer = new XmlSerializer(typeof(ChunkListDto));
+            ChunkListDto result;
 
             // Act
             using (StringReader fileStream = new StringReader(xml))
             {
-                result = (Corpus)serializer.Deserialize(fileStream);
+                result = (ChunkListDto)serializer.Deserialize(fileStream);
             }
 
             // Assert

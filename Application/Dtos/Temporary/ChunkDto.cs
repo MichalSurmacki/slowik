@@ -8,22 +8,22 @@ using System.Xml.Serialization;
 namespace Application.Dtos.Temporary
 {
     [XmlRoot("chunk")]
-    public class Chunk : IXmlSerializable
+    public class ChunkDto : IXmlSerializable
     {
         public int Id { get; set; }
-        public List<Sentence> Sentences { get; set; }
+        public List<SentenceDto> Sentences { get; set; }
 
-        private CorpusMetaData _corpusMetaData;
+        private CorpusMetaDataDto _corpusMetaData;
 
-        public Chunk()
+        public ChunkDto()
         {
-            Sentences = new List<Sentence>();
+            Sentences = new List<SentenceDto>();
         }
 
-        public Chunk(ref CorpusMetaData corpusMetaData)
+        public ChunkDto(ref CorpusMetaDataDto corpusMetaData)
         {
             _corpusMetaData = corpusMetaData;
-            Sentences = new List<Sentence>();
+            Sentences = new List<SentenceDto>();
         }
 
         public XmlSchema GetSchema()
@@ -43,7 +43,7 @@ namespace Application.Dtos.Temporary
 
             while (reader.Read() && reader.IsStartElement())
             {
-                Sentence stc = _corpusMetaData != null ? new Sentence(ref _corpusMetaData) : new Sentence();
+                SentenceDto stc = _corpusMetaData != null ? new SentenceDto(ref _corpusMetaData) : new SentenceDto();
                 stc.ReadXml(reader.ReadSubtree());
                 Sentences.Add(stc);
             }

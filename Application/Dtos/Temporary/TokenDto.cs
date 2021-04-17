@@ -7,29 +7,29 @@ using System.Xml.Serialization;
 namespace Application.Dtos.Temporary
 {
     [XmlRoot("tok")]
-    public class Token : IXmlSerializable
+    public class TokenDto : IXmlSerializable
     {
 
         public string Orth { get; set; }
 
-        public List<Lexem> Lexems { get; set; }
+        public List<LexemDto> Lexems { get; set; }
 
         public bool NoSpaceBefore { get; set; }
 
-        private CorpusMetaData _corpusMetaData;
+        private CorpusMetaDataDto _corpusMetaData;
 
-        public Token()
+        public TokenDto()
         {
             NoSpaceBefore = false;
             _corpusMetaData = null;
-            Lexems = new List<Lexem>();
+            Lexems = new List<LexemDto>();
         }
 
-        public Token(ref CorpusMetaData corpusMetaData, bool noSpaceBefore = false)
+        public TokenDto(ref CorpusMetaDataDto corpusMetaData, bool noSpaceBefore = false)
         {
             NoSpaceBefore = noSpaceBefore;
             _corpusMetaData = corpusMetaData;
-            Lexems = new List<Lexem>();
+            Lexems = new List<LexemDto>();
         }
 
         public XmlSchema GetSchema()
@@ -67,7 +67,7 @@ namespace Application.Dtos.Temporary
             //lex tags
             while (reader.IsStartElement())
             {
-                Lexem lex = new Lexem();
+                LexemDto lex = new LexemDto();
                 lex.ReadXml(reader.ReadSubtree());
                 Lexems.Add(lex);
 

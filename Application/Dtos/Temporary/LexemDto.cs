@@ -7,7 +7,7 @@ using System.Xml.Serialization;
 namespace Application.Dtos.Temporary
 {
     [XmlRoot("lex")]
-    public class Lexem : IXmlSerializable
+    public class LexemDto : IXmlSerializable
     {
         public string Base { get; set; }
 

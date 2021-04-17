@@ -17,17 +17,17 @@ namespace Application.Repositories
             _corpusesService = corpusesService; 
         }
 
-        public Chunk GetChunkByCorpusId(Guid corpusId, int chunkId)
+        public ChunkDto GetChunkByCorpusId(Guid corpusId, int chunkId)
         {
             throw new NotImplementedException();
         }
 
-        public Sentence GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId)
+        public SentenceDto GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId)
         {
             throw new NotImplementedException();
         }
 
-        public void CreateCorpusMetaData(Corpus corpus)
+        public void CreateCorpusMetaData(ChunkListDto corpus)
         {
             throw new NotImplementedException();
         }

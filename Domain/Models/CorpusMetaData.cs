@@ -1,11 +1,16 @@
+using System;
 using System.Collections.Generic;
 
 namespace Domain.Models
 {
     public class CorpusMetaData
     {
-        // klucz - szukane słowo, wartosc - lista numerow zdan gdzie wystepuje slowo
-        public Dictionary<string, List<int>> LookupTable { get; set; }
+        public Guid Id { get; set; }
+        public Corpus Corpus { get; set; }
+        public int NumberOfProcessedFiles { get; set; }
+        public int NumberOfChunkLists { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string CreatedBy { get; set; }
     }
 
 }

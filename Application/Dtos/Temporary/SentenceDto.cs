@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -7,26 +9,22 @@ using System.Xml.Serialization;
 namespace Application.Dtos.Temporary
 {
     [XmlRoot("sentence")]
-    public class Sentence : IXmlSerializable
+    public class SentenceDto : IXmlSerializable
     {
         public int Id { get; set; }
+        public List<TokenDto> Tokens { get; set; }
+        public string Xml { get; set; }
 
-        public List<Token> Tokens { get; set; }
+        private CorpusMetaDataDto _corpusMetaData;
 
-        public Guid CorpusId { get; private set; }
-
-        public int ChunkId { get; set; }
-
-        private CorpusMetaData _corpusMetaData;
-
-        public Sentence()
+        public SentenceDto()
         {
-            Tokens = new List<Token>();
+            Tokens = new List<TokenDto>();
         }
 
-        public Sentence(ref CorpusMetaData corpusMetaData)
+        public SentenceDto(ref CorpusMetaDataDto corpusMetaData)
         {
-            Tokens = new List<Token>();
+            Tokens = new List<TokenDto>();
             _corpusMetaData = corpusMetaData;
         }
 
@@ -37,9 +35,13 @@ namespace Application.Dtos.Temporary
 
         public void ReadXml(XmlReader reader)
         {
-            
             reader.MoveToContent();
-            var _xml_id = reader.GetAttribute("id");
+            Xml = reader.ReadOuterXml();
+
+            XmlReader sentenceReader = XmlReader.Create(new StringReader(Xml));
+            sentenceReader.MoveToContent();
+
+            var _xml_id = sentenceReader.GetAttribute("id");
             _xml_id = _xml_id.Trim('s');
             int _id;
             if (Int32.TryParse(_xml_id, out _id)) Id = _id;
@@ -49,14 +51,14 @@ namespace Application.Dtos.Temporary
             bool ns = false;
 
             //tok/ns tags
-            while (reader.Read() && reader.IsStartElement())
+            while (sentenceReader.Read() && sentenceReader.IsStartElement())
             {
-                switch (reader.Name)
+                switch (sentenceReader.Name)
                 {
                     case "tok":
-                        Token tok;
-                        tok = _corpusMetaData != null ? new Token(ref _corpusMetaData, ns) : new Token();
-                        tok.ReadXml(reader.ReadSubtree());
+                        TokenDto tok;
+                        tok = _corpusMetaData != null ? new TokenDto(ref _corpusMetaData, ns) : new TokenDto();
+                        tok.ReadXml(sentenceReader.ReadSubtree());
                         Tokens.Add(tok);
                         ns = false;
                         break;
@@ -68,9 +70,9 @@ namespace Application.Dtos.Temporary
                 }
             }
 
-            if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
+            if (sentenceReader.NodeType == XmlNodeType.EndElement || sentenceReader.NodeType == XmlNodeType.Whitespace)
             {
-                reader.Skip();
+                sentenceReader.Skip();
             }
         }
 

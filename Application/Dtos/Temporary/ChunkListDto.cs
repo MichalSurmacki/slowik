@@ -7,21 +7,21 @@ using System.Xml.Serialization;
 namespace Application.Dtos.Temporary
 {
     [XmlRoot("chunkList")]
-    public class Corpus : IXmlSerializable
+    public class ChunkListDto : IXmlSerializable
     {
         public Guid Id { get; set; }
 
-        public List<Chunk> Chunks { get; set; }
+        public List<ChunkDto> Chunks { get; set; }
 
-        public CorpusMetaData _corpusMetaData;
+        public CorpusMetaDataDto _corpusMetaData;
 
-        public Corpus()
+        public ChunkListDto()
         {
             Id = Guid.NewGuid();
-            _corpusMetaData = new CorpusMetaData();
+            _corpusMetaData = new CorpusMetaDataDto();
             _corpusMetaData.CorpusId = Id;
 
-            Chunks = new List<Chunk>();
+            Chunks = new List<ChunkDto>();
         }
 
         public XmlSchema GetSchema()
@@ -35,7 +35,7 @@ namespace Application.Dtos.Temporary
 
             while (reader.Read() && reader.IsStartElement())
             {
-                Chunk chnk = new Chunk(ref _corpusMetaData);
+                ChunkDto chnk = new ChunkDto(ref _corpusMetaData);
                 chnk.ReadXml(reader.ReadSubtree());
                 Chunks.Add(chnk);
             }
