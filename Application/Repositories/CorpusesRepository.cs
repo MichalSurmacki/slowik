@@ -5,31 +5,54 @@ using System.IO;
 using System.Collections.Generic;
 using System;
 using Application.Dtos;
+using Domain.Models;
 
 namespace Application.Repositories
 {
     public class CorpusesRepository : ICorpusesRepository
     {
-        private readonly ICorpusesService _corpusesService;
+        private readonly ISlowikContext _context;
 
-        public CorpusesRepository(ICorpusesService corpusesService)
+        public CorpusesRepository(ISlowikContext context)
         {
-            _corpusesService = corpusesService; 
+            _context = context; 
         }
 
-        public ChunkDto GetChunkByCorpusId(Guid corpusId, int chunkId)
+        public void CreateChunk(Chunk chunk)
+        {
+            if(chunk == null) throw new ArgumentNullException(nameof(chunk));
+            _context.Chunks.Add(chunk);
+        }
+
+        public void CreateChunkList(ChunkList chunkList)
         {
             throw new NotImplementedException();
         }
 
-        public SentenceDto GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId)
+        public void CreateCorpus(Corpus corpus)
+        {
+            if(corpus == null) throw new ArgumentNullException(nameof(corpus));
+            _context.Corpuses.Add(corpus);
+        }
+
+        public void CreateSentence(Sentence sentence)
         {
             throw new NotImplementedException();
         }
 
-        public void CreateCorpusMetaData(ChunkListDto corpus)
+        public Chunk GetChunkByCorpusId(Guid corpusId, int chunkId)
         {
             throw new NotImplementedException();
+        }
+
+        public Sentence GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool SaveChanges()
+        {
+            return (_context.SaveChanges() >= 0);
         }
     }
 }

@@ -28,7 +28,7 @@ namespace Application.Tests
             // Arange
             var source = new SentenceDto
             {
-                Id = id,
+                XmlSentenceId = id,
                 Xml = testXml,
                 Tokens = new List<TokenDto>()
             }; 

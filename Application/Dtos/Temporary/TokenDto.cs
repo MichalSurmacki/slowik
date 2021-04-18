@@ -16,19 +16,19 @@ namespace Application.Dtos.Temporary
 
         public bool NoSpaceBefore { get; set; }
 
-        private CorpusMetaDataDto _corpusMetaData;
+        private ChunkListMetaDataDto _chunkListMetaData;
 
         public TokenDto()
         {
             NoSpaceBefore = false;
-            _corpusMetaData = null;
+            _chunkListMetaData = null;
             Lexems = new List<LexemDto>();
         }
 
-        public TokenDto(ref CorpusMetaDataDto corpusMetaData, bool noSpaceBefore = false)
+        public TokenDto(ref ChunkListMetaDataDto chunkListMetaData, bool noSpaceBefore = false)
         {
             NoSpaceBefore = noSpaceBefore;
-            _corpusMetaData = corpusMetaData;
+            _chunkListMetaData = chunkListMetaData;
             Lexems = new List<LexemDto>();
         }
 
@@ -48,19 +48,19 @@ namespace Application.Dtos.Temporary
             }
 
             //if string is parsed first time
-            if (_corpusMetaData != null)
+            if (_chunkListMetaData != null)
             {
-                _corpusMetaData.NumberOfTokens += 1;
+                _chunkListMetaData.NumberOfTokens += 1;
                 //if word isn't in lookUpDictionary
-                if (_corpusMetaData.WordsLookupDictionary.ContainsKey(Orth))
+                if (_chunkListMetaData.WordsLookupDictionary.ContainsKey(Orth))
                 {
-                    _corpusMetaData.WordsLookupDictionary[Orth].Add(_corpusMetaData.NumberOfChunks);
+                    _chunkListMetaData.WordsLookupDictionary[Orth].Add(_chunkListMetaData.NumberOfChunks);
                 }
                 else
                 {
                     var list = new List<int>();
-                    list.Add(_corpusMetaData.NumberOfChunks);
-                    _corpusMetaData.WordsLookupDictionary.Add(Orth, list);
+                    list.Add(_chunkListMetaData.NumberOfChunks);
+                    _chunkListMetaData.WordsLookupDictionary.Add(Orth, list);
                 }
             }
 

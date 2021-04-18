@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace Application.Dtos.Temporary
 {
@@ -10,17 +11,12 @@ namespace Application.Dtos.Temporary
     public class ChunkListDto : IXmlSerializable
     {
         public Guid Id { get; set; }
-
         public List<ChunkDto> Chunks { get; set; }
-
-        public CorpusMetaDataDto _corpusMetaData;
+        public ChunkListMetaDataDto _chunkListMetaData;
 
         public ChunkListDto()
         {
-            Id = Guid.NewGuid();
-            _corpusMetaData = new CorpusMetaDataDto();
-            _corpusMetaData.CorpusId = Id;
-
+            _chunkListMetaData = new ChunkListMetaDataDto();
             Chunks = new List<ChunkDto>();
         }
 
@@ -35,13 +31,14 @@ namespace Application.Dtos.Temporary
 
             while (reader.Read() && reader.IsStartElement())
             {
-                ChunkDto chnk = new ChunkDto(ref _corpusMetaData);
+                ChunkDto chnk = new ChunkDto(ref _chunkListMetaData);
                 chnk.ReadXml(reader.ReadSubtree());
                 Chunks.Add(chnk);
             }
 
             if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
             {
+                _chunkListMetaData.JsonRepresentation = JsonConvert.SerializeObject(_chunkListMetaData.WordsLookupDictionary);
                 reader.Skip();
             }
         }

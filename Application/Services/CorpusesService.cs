@@ -10,6 +10,8 @@ using System.Xml.Serialization;
 using Application.Dtos;
 using Application.Dtos.Temporary;
 using Application.Interfaces;
+using AutoMapper;
+using Domain.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -23,24 +25,51 @@ namespace Application.Services
         private static string baseClarinApiUri = "http://ws.clarin-pl.eu/nlprest2/base";
 
         private readonly IHttpClientFactory _clientFactory;
-
         private readonly ICorpusesRepository _corpusesRepository;
+        private readonly IMapper _mapper;
 
-        public CorpusesService(IHttpClientFactory clientFactory)
+        public CorpusesService(IHttpClientFactory clientFactory, ICorpusesRepository corpusesRepository,
+                                IMapper mapper)
         {
             _clientFactory = clientFactory;
-            // _corpusesRepository = corpusesRepository;
+            _corpusesRepository = corpusesRepository;
+            _mapper = mapper;
         }
 
-        public ChunkListDto ParseCCLFileToObject(string path)
+        public ChunkListDto ParseCCLStringToChunkListDto(string ccl)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(ChunkListDto));
             ChunkListDto result;
-            using (FileStream fileStream = new FileStream(path, FileMode.Open))
+            using (StringReader reader = new StringReader(ccl))
             {
-                result = (ChunkListDto)serializer.Deserialize(fileStream);
+                result = (ChunkListDto)serializer.Deserialize(reader);
             }
+
             return result;
+        }
+
+        public async Task<Guid> CreateCorpusFromZIP(Stream stream)
+        {
+            // make a corpus
+            CorpusDto corpusDto = new CorpusDto();
+
+            List<string> CCLStrings = await ParseZIPToCCL(stream);
+            foreach(var s in CCLStrings)
+            {
+                corpusDto.ChunkLists.Add(ParseCCLStringToChunkListDto(s));
+            }
+            corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, "anybody");
+
+            // data database changes
+            Corpus corpus = _mapper.Map<CorpusDto, Corpus>(corpusDto);
+            _corpusesRepository.CreateCorpus(corpus);
+            _corpusesRepository.SaveChanges();
+
+
+            // corpus cache
+
+            // return created Corpus Guid
+            return corpus.Id;
         }
 
         public async Task<List<string>> ParseZIPToCCL(Stream stream)
@@ -170,7 +199,6 @@ namespace Application.Services
             var contents = await response.Content.ReadAsStringAsync();
 
             return contents;
-        }
-
+        }        
     }
 }

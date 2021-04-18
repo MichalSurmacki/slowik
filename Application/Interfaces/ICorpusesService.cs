@@ -7,11 +7,12 @@ using Application.Dtos.Temporary;
 namespace Application.Interfaces
 {
     public interface ICorpusesService
-    {
-        ChunkListDto ParseCCLFileToObject(string path);
-        
+    {   
         //funkcja korzystająca z api clarin i zwracająca listę otrzymanych otagowanych XML'i
         Task<List<string>> ParseZIPToCCL(Stream stream);
+
+        Task<Guid> CreateCorpusFromZIP(Stream stream);
+        ChunkListDto ParseCCLStringToChunkListDto(string ccl);
 
         //CLARIN
         Task<string> UploadFileToClarinApiPostAsync(Byte[] binaryFile);

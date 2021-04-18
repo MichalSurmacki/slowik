@@ -1,20 +1,20 @@
 using System;
 using System.Collections.Generic;
+using Application.Dtos.Temporary;
 
 namespace Application.Dtos
 {
     public class CorpusMetaDataDto
     {
-        public Guid CorpusId { get; set; }
-        public int NumberOfChunks { get; set; } = 0;
-        public int NumberOfSentences { get; set; } = 0;
-        public int NumberOfTokens { get; set; } = 0;
-        public Dictionary<string, List<int>> WordsLookupDictionary { get; set; }
-        public string XmlRepresentation { get; set; }
-        
-        public CorpusMetaDataDto()
+        public int NumberOfProcessedFiles { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string CreatedBy { get; set; }
+
+        public CorpusMetaDataDto(CorpusDto corpus, string createdBy)
         {
-            WordsLookupDictionary = new Dictionary<string, List<int>>();
+            NumberOfProcessedFiles = corpus.ChunkLists.Count;
+            CreatedAt = DateTime.Now;
+            CreatedBy = createdBy;
         }
     }
 }

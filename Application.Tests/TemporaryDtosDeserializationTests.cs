@@ -129,7 +129,7 @@ namespace Application.Tests
             }
 
             // Assert
-            result.Id.Should().Be(expectedSentenceId);
+            result.XmlSentenceId.Should().Be(expectedSentenceId);
             result.Tokens.Should().HaveCount(expectedNumberOfTokens);
         }
 
@@ -176,7 +176,7 @@ namespace Application.Tests
             }
 
             // Assert
-            result.Id.Should().Be(expectedChunkId);
+            result.XmlChunkId.Should().Be(expectedChunkId);
             result.Sentences.Should().HaveCount(expectedNumberOfSentences);
         }
 
@@ -228,7 +228,7 @@ namespace Application.Tests
             }
 
             // Assert
-            result.Id.Should().NotBe(Guid.Empty);
+            // result.Id.Should().NotBe(Guid.Empty);
             result.Chunks.Should().HaveCount(expectedNumberOfChunks);
         }
     }

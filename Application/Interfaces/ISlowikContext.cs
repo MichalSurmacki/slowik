@@ -11,6 +11,7 @@ namespace Application.Interfaces
         public DbSet<Chunk> Chunks { get; set; }
         public DbSet<ChunkList> Chunklists { get; set; }
         public DbSet<ChunkListMetaData> ChunkListMetaData { get; set; }
+        public int SaveChanges();
 
     }
 }

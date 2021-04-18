@@ -46,15 +46,10 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
-                    b.Property<Guid?>("ChunkListMetaDataId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("CorpusId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ChunkListMetaDataId");
 
                     b.HasIndex("CorpusId");
 
@@ -68,6 +63,10 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
+                    b.Property<string>("JsonDictionaryLookUp")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("NumberOfChunks")
                         .HasColumnType("int");
 
@@ -76,10 +75,6 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("NumberOfTokens")
                         .HasColumnType("int");
-
-                    b.Property<string>("XmlDictionaryLookUp")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -105,9 +100,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
-                    b.Property<Guid?>("CorpusId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -115,15 +107,10 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<int>("NumberOfChunkLists")
-                        .HasColumnType("int");
-
                     b.Property<int>("NumberOfProcessedFiles")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CorpusId");
 
                     b.ToTable("CorpusesMetaDataXml");
                 });
@@ -163,24 +150,31 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Models.ChunkList", b =>
                 {
-                    b.HasOne("Domain.Models.ChunkListMetaData", "ChunkListMetaData")
-                        .WithMany()
-                        .HasForeignKey("ChunkListMetaDataId");
-
                     b.HasOne("Domain.Models.Corpus", "Corpus")
                         .WithMany("ChunkLists")
                         .HasForeignKey("CorpusId");
 
-                    b.Navigation("ChunkListMetaData");
-
                     b.Navigation("Corpus");
+                });
+
+            modelBuilder.Entity("Domain.Models.ChunkListMetaData", b =>
+                {
+                    b.HasOne("Domain.Models.ChunkList", "ChunkList")
+                        .WithOne("ChunkListMetaData")
+                        .HasForeignKey("Domain.Models.ChunkListMetaData", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChunkList");
                 });
 
             modelBuilder.Entity("Domain.Models.CorpusMetaData", b =>
                 {
                     b.HasOne("Domain.Models.Corpus", "Corpus")
-                        .WithMany()
-                        .HasForeignKey("CorpusId");
+                        .WithOne("CorpusMetaData")
+                        .HasForeignKey("Domain.Models.CorpusMetaData", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Corpus");
                 });
@@ -201,12 +195,16 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Models.ChunkList", b =>
                 {
+                    b.Navigation("ChunkListMetaData");
+
                     b.Navigation("Chunks");
                 });
 
             modelBuilder.Entity("Domain.Models.Corpus", b =>
                 {
                     b.Navigation("ChunkLists");
+
+                    b.Navigation("CorpusMetaData");
                 });
 #pragma warning restore 612, 618
         }

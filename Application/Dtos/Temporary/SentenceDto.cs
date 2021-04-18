@@ -11,21 +11,22 @@ namespace Application.Dtos.Temporary
     [XmlRoot("sentence")]
     public class SentenceDto : IXmlSerializable
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
+        public int XmlSentenceId { get; set; }
         public List<TokenDto> Tokens { get; set; }
         public string Xml { get; set; }
 
-        private CorpusMetaDataDto _corpusMetaData;
+        private ChunkListMetaDataDto _chunkListMetaData;
 
         public SentenceDto()
         {
             Tokens = new List<TokenDto>();
         }
 
-        public SentenceDto(ref CorpusMetaDataDto corpusMetaData)
+        public SentenceDto(ref ChunkListMetaDataDto chunkListMetaData)
         {
             Tokens = new List<TokenDto>();
-            _corpusMetaData = corpusMetaData;
+            _chunkListMetaData = chunkListMetaData;
         }
 
         public XmlSchema GetSchema()
@@ -44,9 +45,9 @@ namespace Application.Dtos.Temporary
             var _xml_id = sentenceReader.GetAttribute("id");
             _xml_id = _xml_id.Trim('s');
             int _id;
-            if (Int32.TryParse(_xml_id, out _id)) Id = _id;
+            if (Int32.TryParse(_xml_id, out _id)) XmlSentenceId = _id;
 
-            if(_corpusMetaData != null) _corpusMetaData.NumberOfSentences += 1;
+            if(_chunkListMetaData != null) _chunkListMetaData.NumberOfSentences += 1;
             
             bool ns = false;
 
@@ -57,7 +58,7 @@ namespace Application.Dtos.Temporary
                 {
                     case "tok":
                         TokenDto tok;
-                        tok = _corpusMetaData != null ? new TokenDto(ref _corpusMetaData, ns) : new TokenDto();
+                        tok = _chunkListMetaData != null ? new TokenDto(ref _chunkListMetaData, ns) : new TokenDto();
                         tok.ReadXml(sentenceReader.ReadSubtree());
                         Tokens.Add(tok);
                         ns = false;

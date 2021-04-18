@@ -31,10 +31,19 @@ namespace Infrastructure
                 .HasMany(c => c.Chunks)
                 .WithOne(c => c.Chunklist);
 
+            builder.Entity<ChunkList>()
+                .HasOne(c => c.ChunkListMetaData)
+                .WithOne(c => c.ChunkList)
+                .HasForeignKey<ChunkListMetaData>(c => c.Id);
+            
             builder.Entity<Corpus>()
                 .HasMany(c => c.ChunkLists)
                 .WithOne(c => c.Corpus);
 
+            builder.Entity<Corpus>()
+                .HasOne(c => c.CorpusMetaData)
+                .WithOne(c => c.Corpus)
+                .HasForeignKey<CorpusMetaData>(c => c.Id);
 
             // add configuration
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

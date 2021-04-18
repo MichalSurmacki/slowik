@@ -9,21 +9,21 @@ namespace Application
     {
         public MappingProfile()
         {
-            CreateMap<SentenceDto, Sentence>()
-                .ForMember(dest => dest.XmlSentenceId,
-                 opt=>opt.MapFrom(src => src.Id));
-            
-            CreateMap<ChunkDto, Chunk>()
-                .ForMember(dest => dest.XmlChunkId,
-                 opt=>opt.MapFrom(src => src.Id));
+            CreateMap<SentenceDto, Sentence>();
 
-            CreateMap<ChunkListDto, ChunkList>();
+            CreateMap<ChunkDto, Chunk>();
+
+            CreateMap<ChunkListDto, ChunkList>()
+                .ForMember(dest => dest.ChunkListMetaData,
+                 opt => opt.MapFrom(sourceMember => sourceMember._chunkListMetaData));
 
             CreateMap<CorpusDto, Corpus>();
 
             CreateMap<CorpusMetaDataDto, CorpusMetaData>();
 
-            CreateMap<ChunkListMetaDataDto, ChunkListMetaData>();
+            CreateMap<ChunkListMetaDataDto, ChunkListMetaData>()
+                .ForMember(dest => dest.JsonDictionaryLookUp,
+                 opt => opt.MapFrom(src => src.JsonRepresentation));
 
         }
     }

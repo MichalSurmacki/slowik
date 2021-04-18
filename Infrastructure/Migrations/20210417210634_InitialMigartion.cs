@@ -8,21 +8,6 @@ namespace Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "ChunkListMetaData",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
-                    NumberOfChunks = table.Column<int>(type: "int", nullable: false),
-                    NumberOfSentences = table.Column<int>(type: "int", nullable: false),
-                    NumberOfTokens = table.Column<int>(type: "int", nullable: false),
-                    XmlDictionaryLookUp = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ChunkListMetaData", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Corpuses",
                 columns: table => new
                 {
@@ -38,18 +23,11 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
-                    ChunkListMetaDataId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CorpusId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Chunklists", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Chunklists_ChunkListMetaData_ChunkListMetaDataId",
-                        column: x => x.ChunkListMetaDataId,
-                        principalTable: "ChunkListMetaData",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Chunklists_Corpuses_CorpusId",
                         column: x => x.CorpusId,
@@ -63,9 +41,7 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
-                    CorpusId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     NumberOfProcessedFiles = table.Column<int>(type: "int", nullable: false),
-                    NumberOfChunkLists = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true)
                 },
@@ -73,11 +49,32 @@ namespace Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_CorpusesMetaDataXml", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CorpusesMetaDataXml_Corpuses_CorpusId",
-                        column: x => x.CorpusId,
+                        name: "FK_CorpusesMetaDataXml_Corpuses_Id",
+                        column: x => x.Id,
                         principalTable: "Corpuses",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ChunkListMetaData",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
+                    NumberOfChunks = table.Column<int>(type: "int", nullable: false),
+                    NumberOfSentences = table.Column<int>(type: "int", nullable: false),
+                    NumberOfTokens = table.Column<int>(type: "int", nullable: false),
+                    JsonDictionaryLookUp = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChunkListMetaData", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ChunkListMetaData_Chunklists_Id",
+                        column: x => x.Id,
+                        principalTable: "Chunklists",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -120,11 +117,6 @@ namespace Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Chunklists_ChunkListMetaDataId",
-                table: "Chunklists",
-                column: "ChunkListMetaDataId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Chunklists_CorpusId",
                 table: "Chunklists",
                 column: "CorpusId");
@@ -135,11 +127,6 @@ namespace Infrastructure.Migrations
                 column: "ChunklistId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CorpusesMetaDataXml_CorpusId",
-                table: "CorpusesMetaDataXml",
-                column: "CorpusId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Sentences_ChunkId",
                 table: "Sentences",
                 column: "ChunkId");
@@ -147,6 +134,9 @@ namespace Infrastructure.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ChunkListMetaData");
+
             migrationBuilder.DropTable(
                 name: "CorpusesMetaDataXml");
 
@@ -158,9 +148,6 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Chunklists");
-
-            migrationBuilder.DropTable(
-                name: "ChunkListMetaData");
 
             migrationBuilder.DropTable(
                 name: "Corpuses");

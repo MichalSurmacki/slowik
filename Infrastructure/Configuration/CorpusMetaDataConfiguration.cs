@@ -12,9 +12,6 @@ namespace  Infrastructure.Configuration
             builder.Property(i => i.Id)
                 .HasDefaultValueSql("NEWID()");
 
-            builder.Property(i => i.NumberOfChunkLists)
-                .IsRequired();
-
             builder.Property(i => i.NumberOfProcessedFiles)
                 .IsRequired();
 

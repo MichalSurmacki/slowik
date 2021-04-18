@@ -28,7 +28,6 @@ namespace Api.Controllers
         [HttpGet]
         public ActionResult <string> Home()
         {
-            _corpusesService.ParseCCLFileToObject("D:\\Desktop\\slowik-demo-data\\demo-ccl.xml");
             return Ok();
         }
 
@@ -37,18 +36,18 @@ namespace Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCorpus()
         {
-            List<string> list;
+            Guid id;
             try
             {
                 var file = Request.Form.Files.FirstOrDefault();
-                list = await _corpusesService.ParseZIPToCCL(file.OpenReadStream());
+                id = await _corpusesService.CreateCorpusFromZIP(file.OpenReadStream());
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Internal server error: {ex}");
             }
 
-            return Ok(JsonConvert.SerializeObject(list));
+            return Ok(id);
         }
     }
 }

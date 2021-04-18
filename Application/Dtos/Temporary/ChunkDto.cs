@@ -10,19 +10,20 @@ namespace Application.Dtos.Temporary
     [XmlRoot("chunk")]
     public class ChunkDto : IXmlSerializable
     {
-        public int Id { get; set; }
-        public List<SentenceDto> Sentences { get; set; }
+        public Guid Id { get; set; }
+        public int XmlChunkId { get; set; }
+        public ICollection<SentenceDto> Sentences { get; set; }
 
-        private CorpusMetaDataDto _corpusMetaData;
+        private ChunkListMetaDataDto _chunkListMetaData;
 
         public ChunkDto()
         {
             Sentences = new List<SentenceDto>();
         }
 
-        public ChunkDto(ref CorpusMetaDataDto corpusMetaData)
+        public ChunkDto(ref ChunkListMetaDataDto chunkListMetaData)
         {
-            _corpusMetaData = corpusMetaData;
+            _chunkListMetaData = chunkListMetaData;
             Sentences = new List<SentenceDto>();
         }
 
@@ -37,13 +38,13 @@ namespace Application.Dtos.Temporary
             var _xml_id = reader.GetAttribute("id");
             _xml_id = _xml_id.Trim('c', 'h');
             int _id;
-            if (Int32.TryParse(_xml_id, out _id)) Id = _id;
+            if (Int32.TryParse(_xml_id, out _id)) XmlChunkId = _id;
 
-            if(_corpusMetaData != null) _corpusMetaData.NumberOfChunks += 1;
+            if(_chunkListMetaData != null) _chunkListMetaData.NumberOfChunks += 1;
 
             while (reader.Read() && reader.IsStartElement())
             {
-                SentenceDto stc = _corpusMetaData != null ? new SentenceDto(ref _corpusMetaData) : new SentenceDto();
+                SentenceDto stc = _chunkListMetaData != null ? new SentenceDto(ref _chunkListMetaData) : new SentenceDto();
                 stc.ReadXml(reader.ReadSubtree());
                 Sentences.Add(stc);
             }

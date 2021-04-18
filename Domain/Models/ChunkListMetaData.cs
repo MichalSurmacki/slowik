@@ -11,6 +11,7 @@ namespace Domain.Models
         public int NumberOfTokens { get; set; } = 0;
         
         // klucz - szukane słowo, wartosc - lista numerow zdan gdzie wystepuje slowo
-        public string XmlDictionaryLookUp { get; set; }
+        public string JsonDictionaryLookUp { get; set; }
+        public ChunkList ChunkList { get; set; }
     }
 }

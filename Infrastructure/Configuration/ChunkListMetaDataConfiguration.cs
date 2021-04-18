@@ -22,7 +22,7 @@ namespace Infrastructure.Configuration
                 .IsRequired();
 
             //TODO: length of string containing XmlDictionatyLookUp
-            builder.Property(i => i.XmlDictionaryLookUp)
+            builder.Property(i => i.JsonDictionaryLookUp)
                 .IsRequired();
         }
     }

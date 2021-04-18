@@ -7,5 +7,6 @@ namespace Domain.Models
     {
         public Guid Id { get; set; }
         public ICollection<ChunkList> ChunkLists { get; set; }
+        public CorpusMetaData CorpusMetaData { get; set; }
     }
 }
