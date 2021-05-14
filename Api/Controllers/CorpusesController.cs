@@ -1,12 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Application.Interfaces;
-using Application.Repositories;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace Api.Controllers
 {
@@ -14,9 +10,7 @@ namespace Api.Controllers
     [ApiController]
     public class CorpusesController : ControllerBase
     {
-
         private ICorpusesRepository _corpusesRepository;
-
         private ICorpusesService _corpusesService;
 
         public CorpusesController(ICorpusesRepository corpusesRepository, ICorpusesService corpusesService)
@@ -26,28 +20,26 @@ namespace Api.Controllers
         }
 
         [HttpGet]
-        public ActionResult <string> Home()
+        public ActionResult<string> Home()
         {
             return Ok();
         }
 
-
-        //Tutaj zwracam ID powstałego korpusu 
+        /// <summary>
+        /// Creates new coprus. 
+        /// </summary>
         [HttpPost]
-        public async Task<IActionResult> CreateCorpus()
+        public async Task<IActionResult> CreateCorpus(IFormFile zipFile)
         {
-            Guid id;
-            try
-            {
-                var file = Request.Form.Files.FirstOrDefault();
-                id = await _corpusesService.CreateCorpusFromZIP(file.OpenReadStream());
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex}");
-            }
+            if (zipFile == null)
+                return BadRequest();
 
-            return Ok(id);
+            var corpus = await _corpusesService.CreateFromZIPAsync(zipFile.OpenReadStream());
+
+            if (corpus != null)
+                return Ok(new Tuple<string, Guid>("CorpusGuid", corpus.Id));
+            else
+                return BadRequest();
         }
     }
 }
