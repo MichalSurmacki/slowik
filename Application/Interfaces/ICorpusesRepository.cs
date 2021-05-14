@@ -5,13 +5,11 @@ namespace Application.Interfaces
 {
     public interface ICorpusesRepository
     {
+        void CreateCorpus(Corpus corpus);        
+
+        Chunk GetChunkByChunkListId(Guid chunkListId, int chunkId);
+        Sentence GetSentenceByChunkListAndChunkIds(Guid chunkListId, int chunkId, int sentenceId);
+
         bool SaveChanges();
-        Chunk GetChunkByCorpusId(Guid corpusId, int chunkId);
-        Sentence GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId);
-        
-        void CreateCorpus(Corpus corpus);
-        void CreateChunkList(ChunkList chunkList);
-        void CreateChunk(Chunk chunk);
-        void CreateSentence(Sentence sentence);
     }
 }

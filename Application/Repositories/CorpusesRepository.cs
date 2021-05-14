@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System;
 using Application.Dtos;
 using Domain.Models;
+using System.Linq;
 
 namespace Application.Repositories
 {
@@ -18,36 +19,25 @@ namespace Application.Repositories
             _context = context; 
         }
 
-        public void CreateChunk(Chunk chunk)
-        {
-            if(chunk == null) throw new ArgumentNullException(nameof(chunk));
-            _context.Chunks.Add(chunk);
-        }
-
-        public void CreateChunkList(ChunkList chunkList)
-        {
-            throw new NotImplementedException();
-        }
-
         public void CreateCorpus(Corpus corpus)
         {
             if(corpus == null) throw new ArgumentNullException(nameof(corpus));
             _context.Corpuses.Add(corpus);
         }
 
-        public void CreateSentence(Sentence sentence)
+        public Chunk GetChunkByChunkListId(Guid chunkListId, int chunkId)
         {
-            throw new NotImplementedException();
+            return _context.Chunks.Where(c => c.Chunklist.Id.Equals(chunkListId) && 
+                                         c.XmlChunkId.Equals(chunkId))
+                                         .FirstOrDefault();
         }
 
-        public Chunk GetChunkByCorpusId(Guid corpusId, int chunkId)
+        public Sentence GetSentenceByChunkListAndChunkIds(Guid chunkListId, int chunkId, int sentenceId)
         {
-            throw new NotImplementedException();
-        }
-
-        public Sentence GetSentenceByCorpusAndChunkIds(Guid corpusId, int chunkId, int sentenceId)
-        {
-            throw new NotImplementedException();
+            return _context.Sentences.Where(s => s.Chunk.Id.Equals(chunkId) && 
+                                            s.Chunk.Chunklist.Id.Equals(chunkListId) && 
+                                            s.XmlSentenceId.Equals(sentenceId))
+                                            .FirstOrDefault();
         }
 
         public bool SaveChanges()

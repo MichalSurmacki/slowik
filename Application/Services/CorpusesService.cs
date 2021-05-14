@@ -1,19 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Application.Dtos;
+using Application.Dtos.Clarin;
 using Application.Dtos.Temporary;
 using Application.Interfaces;
 using AutoMapper;
 using Domain.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Application.Services
 {
@@ -22,16 +18,14 @@ namespace Application.Services
     {
         public CorpusMetaDataDto CorpusMetaData { get; set; }
 
-        private static string baseClarinApiUri = "http://ws.clarin-pl.eu/nlprest2/base";
-
-        private readonly IHttpClientFactory _clientFactory;
+        private readonly IClarinService _clarinService;
         private readonly ICorpusesRepository _corpusesRepository;
         private readonly IMapper _mapper;
 
-        public CorpusesService(IHttpClientFactory clientFactory, ICorpusesRepository corpusesRepository,
+        public CorpusesService(IClarinService clarinService, ICorpusesRepository corpusesRepository,
                                 IMapper mapper)
         {
-            _clientFactory = clientFactory;
+            _clarinService = clarinService;
             _corpusesRepository = corpusesRepository;
             _mapper = mapper;
         }
@@ -48,157 +42,80 @@ namespace Application.Services
             return result;
         }
 
-        public async Task<Guid> CreateCorpusFromZIP(Stream stream)
+        public async Task<CorpusDto> CreateFromZIPAsync(Stream stream)
         {
-            // make a corpus
             CorpusDto corpusDto = new CorpusDto();
-
-            List<string> CCLStrings = await ParseZIPToCCL(stream);
-            foreach(var s in CCLStrings)
+            try
             {
-                corpusDto.ChunkLists.Add(ParseCCLStringToChunkListDto(s));
+                var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+                List<string> CCLStrings = await ParseZIPToCCLAsync(archive);
+                foreach (var s in CCLStrings)
+                {
+                    corpusDto.ChunkLists.Add(ParseCCLStringToChunkListDto(s));
+                }
+                corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, "anybody");
+
+                // data database changes
+                Corpus corpus = _mapper.Map<CorpusDto, Corpus>(corpusDto);
+                _corpusesRepository.CreateCorpus(corpus);
+                _corpusesRepository.SaveChanges();
+
+
+                // corpus cache
+
+                // return created Corpus Guid
+                return corpusDto;    
             }
-            corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, "anybody");
-
-            // data database changes
-            Corpus corpus = _mapper.Map<CorpusDto, Corpus>(corpusDto);
-            _corpusesRepository.CreateCorpus(corpus);
-            _corpusesRepository.SaveChanges();
-
-
-            // corpus cache
-
-            // return created Corpus Guid
-            return corpus.Id;
+            catch (Exception ex)
+            {
+                if (ex is ArgumentException || ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is InvalidDataException)
+                    return null;
+                throw;
+            }
         }
 
-        public async Task<List<string>> ParseZIPToCCL(Stream stream)
+        public async Task<List<string>> ParseZIPToCCLAsync(ZipArchive archive)
         {
             var list = new List<string>();
-
-            var archive = new ZipArchive(stream, ZipArchiveMode.Read);
             foreach (var e in archive.Entries)
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
                     e.Open().CopyTo(ms);
 
-                    var fileId = await UploadFileToClarinApiPostAsync(ms.ToArray());
+                    var fileId = await _clarinService.UploadFile_ApiPostAsync(ms.ToArray());
+                    var taskId = await _clarinService.UseWCRFT2Tager_ApiPostAsync(fileId);
 
-                    var taskId = await UseClarinApiTagerPostAsync(fileId);
-
-                    string completedTaskFileId;
+                    TaskStatusDto taskStatus; 
+                    string ccl = "";
                     do
                     {
-                        var responseJson = await ClarinApiTaskStatusGetAsync(taskId);
-                        JObject taskStatusJson = JObject.Parse(responseJson);
-                        var status = taskStatusJson["status"].ToString();
-
-                        if (status == "DONE")
+                        taskStatus = await _clarinService.GetTaskStatus_ApiGetAsync(taskId);
+                        if (taskStatus.Status == "ERROR")
                         {
-                            completedTaskFileId = taskStatusJson["value"][0]["fileID"].ToString();
+                            ccl = $"CLARIN ERROR WHILE PARSING|{e.Name}";
                             break;
                         }
-                        else if (status == "ERROR")
+                        else if (taskStatus.UnknowStatus)
                         {
-                            var errorMessage = taskStatusJson["value"].ToString();
-                            throw new Exception(errorMessage);
+                            ccl = $"CLARIN UNKNOW STATUS WHILE PARSING:|{e.Name}";
+                            break;   
                         }
-                        else if (status == "QUEUING" || status == "PROCESSING")
+                        else if (taskStatus.Status != "DONE")
                         {
-                            var message = taskStatusJson["value"].ToString();
-                            Debug.WriteLine(message);
+                            //czekamy pół sekundy może się coś zmieni
+                            await Task.Delay(500);
                         }
-                        else
-                        {
-                            throw new Exception("Unknown task status form ClarinApi");
-                        }
-                        //czekamy sekundę może się coś zmieni
-                        await Task.Delay(1000);
-                    } while (true);
-                    var ccl = await ClarinApiDownloadCompletedTaskGetAsync(completedTaskFileId);
+                            
+                    } while (taskStatus.Status != "DONE");
+
+                    if(taskStatus.Status != "ERROR") 
+                        ccl = await _clarinService.DownloadCompletedTask_ApiGetAsync(taskStatus.ResultFileId);
+                        
                     list.Add(ccl);
                 }
             }
-
             return list;
         }
-
-        // zwraca id wczytanego na serwer dokumentu w formacie: "users/defalut/{guid}"
-        public async Task<string> UploadFileToClarinApiPostAsync(Byte[] binaryFile)
-        {
-            string uri = baseClarinApiUri + "/upload";
-
-            ByteArrayContent byteContent = new ByteArrayContent(binaryFile);
-            byteContent.Headers.Add("Content-Type", "binary/octet-stream");
-
-            var client = _clientFactory.CreateClient();
-
-            var response = await client.PostAsync(uri, byteContent);
-            var contents = await response.Content.ReadAsStringAsync();
-
-            Debug.WriteLine("***********************************************************************");
-            Debug.WriteLine(contents);
-            Debug.WriteLine("***********************************************************************");
-            return contents;
-        }
-
-        // zwraca id operacji przetwarzanej na serwerze w formacie "{guid}"
-        public async Task<string> UseClarinApiTagerPostAsync(string uploadedFileId)
-        {
-            string uri = baseClarinApiUri + "/startTask";
-
-            string json = $@"{{      
-                            ""lpmn"":""any2txt|wcrft2({{\""guesser\"":false, \""morfeusz2\"":true}})"",
-                            ""file"": ""{uploadedFileId}"",
-                            ""user"": ""slowik-test"" 
-                            }}";
-
-            StringContent jsonContent = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var client = _clientFactory.CreateClient();
-
-            var response = await client.PostAsync(uri, jsonContent);
-            var contents = await response.Content.ReadAsStringAsync();
-
-
-            Debug.WriteLine("***********************************************************************");
-            Debug.WriteLine(contents);
-            Debug.WriteLine("***********************************************************************");
-
-            return contents;
-        }
-
-
-        // fileId w formacie "/requests/wcrft2/{guid}", status w formacie {DONE lub ERROR (value zawiera opis błędu) lub QUEUING(?) lub 
-        //PROCESSING(value posiada wartość reprezentującą stopień wykonania zadania)}
-        public async Task<string> ClarinApiTaskStatusGetAsync(string taskId)
-        {
-            string uri = baseClarinApiUri + $"/getStatus/{taskId}";
-
-            var client = _clientFactory.CreateClient();
-
-            var response = await client.GetAsync(uri);
-            var contents = await response.Content.ReadAsStringAsync();
-
-            Debug.WriteLine("***********************************************************************");
-            Debug.WriteLine(contents);
-            Debug.WriteLine("***********************************************************************");
-
-            return contents;
-        }
-
-        // zwraca CCL
-        public async Task<string> ClarinApiDownloadCompletedTaskGetAsync(string fileId)
-        {
-            string uri = baseClarinApiUri + $"/download{fileId}";
-
-            var client = _clientFactory.CreateClient();
-
-            var response = await client.GetAsync(uri);
-            var contents = await response.Content.ReadAsStringAsync();
-
-            return contents;
-        }        
     }
 }

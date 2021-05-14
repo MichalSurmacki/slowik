@@ -14,6 +14,7 @@ namespace Application
         {
             services.AddScoped<ICorpusesRepository, CorpusesRepository>();
             services.AddScoped<ICorpusesService, CorpusesService>();
+            services.AddScoped<IClarinService, ClarinService>();
 
             services.AddHttpClient();
 
