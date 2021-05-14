@@ -43,7 +43,7 @@ namespace Api.Controllers
             if (corpus != null)
             {
                 var cacheEntryOptions = new MemoryCacheEntryOptions().SetSize(1);
-                _cache.Set<CorpusDto>(i, corpus, cacheEntryOptions);
+                _cache.Set<CorpusDto>(corpus.Id, corpus, cacheEntryOptions);
 
                 return Ok(new Tuple<string, Guid>("CorpusGuid", corpus.Id));
             }
