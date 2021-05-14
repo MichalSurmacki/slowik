@@ -55,15 +55,12 @@ namespace Application.Services
                 }
                 corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, "anybody");
 
-                // data database changes
+                // database changes
                 Corpus corpus = _mapper.Map<CorpusDto, Corpus>(corpusDto);
                 _corpusesRepository.CreateCorpus(corpus);
                 _corpusesRepository.SaveChanges();
+                corpusDto.Id = corpus.Id;
 
-
-                // corpus cache
-
-                // return created Corpus Guid
                 return corpusDto;    
             }
             catch (Exception ex)
@@ -82,7 +79,7 @@ namespace Application.Services
                 using (MemoryStream ms = new MemoryStream())
                 {
                     e.Open().CopyTo(ms);
-
+                    
                     var fileId = await _clarinService.UploadFile_ApiPostAsync(ms.ToArray());
                     var taskId = await _clarinService.UseWCRFT2Tager_ApiPostAsync(fileId);
 

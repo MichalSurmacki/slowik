@@ -1,8 +1,11 @@
 using System;
 using System.Threading.Tasks;
+using Application.Cache;
+using Application.Dtos.Temporary;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Controllers
 {
@@ -12,11 +15,13 @@ namespace Api.Controllers
     {
         private ICorpusesRepository _corpusesRepository;
         private ICorpusesService _corpusesService;
+        private MemoryCache _cache;
 
-        public CorpusesController(ICorpusesRepository corpusesRepository, ICorpusesService corpusesService)
+        public CorpusesController(ICorpusesRepository corpusesRepository, ICorpusesService corpusesService, CorpusesCache corpusesCache)
         {
             _corpusesRepository = corpusesRepository;
             _corpusesService = corpusesService;
+            _cache = corpusesCache.Cache;
         }
 
         [HttpGet]
@@ -25,9 +30,8 @@ namespace Api.Controllers
             return Ok();
         }
 
-        /// <summary>
-        /// Creates new coprus. 
-        /// </summary>
+        /// Summary:
+        ///     Creates new coprus from zip file.
         [HttpPost]
         public async Task<IActionResult> CreateCorpus(IFormFile zipFile)
         {
@@ -37,7 +41,12 @@ namespace Api.Controllers
             var corpus = await _corpusesService.CreateFromZIPAsync(zipFile.OpenReadStream());
 
             if (corpus != null)
+            {
+                var cacheEntryOptions = new MemoryCacheEntryOptions().SetSize(1);
+                _cache.Set<CorpusDto>(i, corpus, cacheEntryOptions);
+
                 return Ok(new Tuple<string, Guid>("CorpusGuid", corpus.Id));
+            }
             else
                 return BadRequest();
         }
