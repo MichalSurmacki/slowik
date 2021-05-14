@@ -9,6 +9,7 @@ namespace Domain.Models
         public int NumberOfChunks { get; set; } = 0;
         public int NumberOfSentences { get; set; } = 0;
         public int NumberOfTokens { get; set; } = 0;
+        public string OriginFileName { get; set; }
         
         // klucz - szukane słowo, wartosc - lista numerow zdan gdzie wystepuje slowo
         public string JsonDictionaryLookUp { get; set; }

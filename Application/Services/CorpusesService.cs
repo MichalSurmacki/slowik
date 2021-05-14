@@ -10,6 +10,7 @@ using Application.Dtos.Temporary;
 using Application.Interfaces;
 using AutoMapper;
 using Domain.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace Application.Services
 {
@@ -42,18 +43,23 @@ namespace Application.Services
             return result;
         }
 
-        public async Task<CorpusDto> CreateFromZIPAsync(Stream stream)
+        public async Task<CorpusDto> CreateFromZIP_Async(IFormFile zipFile)
         {
             CorpusDto corpusDto = new CorpusDto();
             try
             {
-                var archive = new ZipArchive(stream, ZipArchiveMode.Read);
-                List<string> CCLStrings = await ParseZIPToCCLAsync(archive);
-                foreach (var s in CCLStrings)
+                var archive = new ZipArchive(zipFile.OpenReadStream(), ZipArchiveMode.Read);
+                var CCLs = new List<string>();
+                foreach (var e in archive.Entries)
                 {
-                    corpusDto.ChunkLists.Add(ParseCCLStringToChunkListDto(s));
+                    var ccl = await ParseToCCL_Async(e);
+                    CCLs.Add(ccl);
+                    var chunkListDto = ParseCCLStringToChunkListDto(ccl);
+                    chunkListDto._chunkListMetaData.OriginFileName = e.Name;
+                    corpusDto.ChunkLists.Add(chunkListDto);
                 }
-                corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, "anybody");
+
+                corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, zipFile.FileName, "anybody");
 
                 // database changes
                 Corpus corpus = _mapper.Map<CorpusDto, Corpus>(corpusDto);
@@ -61,7 +67,7 @@ namespace Application.Services
                 _corpusesRepository.SaveChanges();
                 corpusDto.Id = corpus.Id;
 
-                return corpusDto;    
+                return corpusDto;
             }
             catch (Exception ex)
             {
@@ -71,48 +77,43 @@ namespace Application.Services
             }
         }
 
-        public async Task<List<string>> ParseZIPToCCLAsync(ZipArchive archive)
+        public async Task<string> ParseToCCL_Async(ZipArchiveEntry entry)
         {
-            var list = new List<string>();
-            foreach (var e in archive.Entries)
+            using (MemoryStream ms = new MemoryStream())
             {
-                using (MemoryStream ms = new MemoryStream())
+                entry.Open().CopyTo(ms);
+
+                var fileId = await _clarinService.UploadFile_ApiPostAsync(ms.ToArray());
+                var taskId = await _clarinService.UseWCRFT2Tager_ApiPostAsync(fileId);
+
+                TaskStatusDto taskStatus;
+                string ccl = "";
+                do
                 {
-                    e.Open().CopyTo(ms);
-                    
-                    var fileId = await _clarinService.UploadFile_ApiPostAsync(ms.ToArray());
-                    var taskId = await _clarinService.UseWCRFT2Tager_ApiPostAsync(fileId);
-
-                    TaskStatusDto taskStatus; 
-                    string ccl = "";
-                    do
+                    taskStatus = await _clarinService.GetTaskStatus_ApiGetAsync(taskId);
+                    if (taskStatus.Status == "ERROR")
                     {
-                        taskStatus = await _clarinService.GetTaskStatus_ApiGetAsync(taskId);
-                        if (taskStatus.Status == "ERROR")
-                        {
-                            ccl = $"CLARIN ERROR WHILE PARSING|{e.Name}";
-                            break;
-                        }
-                        else if (taskStatus.UnknowStatus)
-                        {
-                            ccl = $"CLARIN UNKNOW STATUS WHILE PARSING:|{e.Name}";
-                            break;   
-                        }
-                        else if (taskStatus.Status != "DONE")
-                        {
-                            //czekamy pół sekundy może się coś zmieni
-                            await Task.Delay(500);
-                        }
-                            
-                    } while (taskStatus.Status != "DONE");
+                        ccl = $"CLARIN ERROR WHILE PARSING|{entry.Name}";
+                        break;
+                    }
+                    else if (taskStatus.UnknowStatus)
+                    {
+                        ccl = $"CLARIN UNKNOW STATUS WHILE PARSING:|{entry.Name}";
+                        break;
+                    }
+                    else if (taskStatus.Status != "DONE")
+                    {
+                        //czekamy pół sekundy może się coś zmieni
+                        await Task.Delay(500);
+                    }
 
-                    if(taskStatus.Status != "ERROR") 
-                        ccl = await _clarinService.DownloadCompletedTask_ApiGetAsync(taskStatus.ResultFileId);
-                        
-                    list.Add(ccl);
-                }
+                } while (taskStatus.Status != "DONE");
+
+                if (taskStatus.Status != "ERROR")
+                    ccl = await _clarinService.DownloadCompletedTask_ApiGetAsync(taskStatus.ResultFileId);
+
+                return ccl;
             }
-            return list;
         }
     }
 }

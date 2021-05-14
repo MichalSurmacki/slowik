@@ -36,9 +36,9 @@ namespace Api.Controllers
         public async Task<IActionResult> CreateCorpus(IFormFile zipFile)
         {
             if (zipFile == null)
-                return BadRequest();
+                return BadRequest(); 
 
-            var corpus = await _corpusesService.CreateFromZIPAsync(zipFile.OpenReadStream());
+            var corpus = await _corpusesService.CreateFromZIP_Async(zipFile);
 
             if (corpus != null)
             {
