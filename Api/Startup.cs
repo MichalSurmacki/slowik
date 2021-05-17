@@ -6,6 +6,8 @@ using Microsoft.Extensions.Hosting;
 using Application;
 using Infrastructure;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Reflection;
 using System.IO;
 
 namespace Api
@@ -34,12 +36,27 @@ namespace Api
                 c.SwaggerDoc("v1",
                     new OpenApiInfo
                     {
-                        Title = "My API - V1",
-                        Version = "v1"
+                        Title = "Słowik",
+                        Version = "v1",
+                        //TODO
+                        Description = "A sample API using Swashbuckle",
+                        Contact = new OpenApiContact
+                        {
+                            Name = "",
+                            Email = "@student.pwtr.edu.pl"
+                        },
+                        // License = new OpenApiLicense
+                        // {
+                        //     Name = "Apache 2.0",
+                        // }
                     }
                 );
                 var filePath = Path.Combine(System.AppContext.BaseDirectory, "Api.xml");
                 c.IncludeXmlComments(filePath);
+                c.CustomOperationIds(apiDesc =>
+                {
+                    return apiDesc .TryGetMethodInfo(out MethodInfo methodInfo) ? methodInfo.Name : null;
+                });
             });
         }
 
@@ -47,7 +64,10 @@ namespace Api
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger();
+            app.UseSwagger(c =>
+            {
+                c.SerializeAsV2 = true;
+            });
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Slowik API V1");

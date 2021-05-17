@@ -6,6 +6,7 @@ using Application.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Api.Controllers
 {
@@ -30,10 +31,26 @@ namespace Api.Controllers
             return Ok();
         }
 
-        /// Summary:
-        ///     Creates new coprus from zip file.
+        /// <summary>
+        /// Retrieves a zip file and returns key
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /Todo
+        ///     {
+        ///        "TODO:"
+        ///     }
+        ///
+        /// </remarks>
+        /// <param name="zipFile" example="example.zip">The product id</param>
+        /// <response code="200">Zip saved</response>
+        /// <response code="400">Invalid file</response>
+        /// <response code="500">Oops! Can't recive this corpus right now</response>
         [HttpPost]
-        public async Task<IActionResult> CreateCorpus(IFormFile zipFile)
+        [ProducesResponseType(typeof(Tuple<string, Guid>),200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> CreateCorpus([BindRequired]IFormFile zipFile)
         {
             if (zipFile == null)
                 return BadRequest(); 
@@ -51,10 +68,26 @@ namespace Api.Controllers
                 return BadRequest();
         }
 
-        /// Summary:
-        ///     Gets colocations on the left or right by word
+
+        /// <summary>
+        /// Gets colocations on the left or right by word
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST 
+        ///     {
+        ///        "Guid:" : "AAAA-AAAA-AAAA-AAAA",
+        ///        "word:" : "abecadło",
+        ///        "scopeAndDirection": "2"
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="200">Word collocations</response>
+        /// <response code="400">Invalid word/corpus/scopeAndDirection</response>
+        /// <response code="500">Internal Server Error</response>
         [HttpGet("{corpusId:Guid}/collocations")]
-        public async Task<IActionResult> GetCollocations(Guid corpusId, string word, int scopeAndDirection)
+        public async Task<IActionResult> GetCollocations([BindRequired]Guid corpusId, [BindRequired]string word, [BindRequired]int scopeAndDirection)
         {
             if(word == null || scopeAndDirection == 0 || corpusId == null)
                 return BadRequest();
@@ -63,10 +96,24 @@ namespace Api.Controllers
             return Ok(collocations);
         }
 
-        /// Summary:
-        ///     Gets
+        /// <summary>
+        /// Gets number of word apperances
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST 
+        ///     {
+        ///        "Guid:" : "AAAA-AAAA-AAAA-AAAA",
+        ///        "word:" : "abecadło"
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="200">Word apperance number</response>
+        /// <response code="400">Invalid word/corpus</response>
+        /// <response code="500">Internal Server Error</response>
         [HttpGet("{corpusId:Guid}/apperances")]
-        public async Task<IActionResult> GetNumberOfAppearance(Guid corpusId, string word)
+        public async Task<IActionResult> GetNumberOfAppearance([BindRequired]Guid corpusId, [BindRequired]string word)
         {
             if(word == null || corpusId == null)
                 return BadRequest();
