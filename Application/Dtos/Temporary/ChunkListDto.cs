@@ -10,7 +10,6 @@ namespace Application.Dtos.Temporary
     [XmlRoot("chunkList")]
     public class ChunkListDto : IXmlSerializable
     {
-        public Guid Id { get; set; }
         public List<ChunkDto> Chunks { get; set; }
         public ChunkListMetaDataDto _chunkListMetaData;
 
@@ -38,7 +37,7 @@ namespace Application.Dtos.Temporary
 
             if (reader.NodeType == XmlNodeType.EndElement || reader.NodeType == XmlNodeType.Whitespace)
             {
-                _chunkListMetaData.JsonRepresentation = JsonConvert.SerializeObject(_chunkListMetaData.WordsLookupDictionary);
+                _chunkListMetaData.JsonDictionaryLookUp = JsonConvert.SerializeObject(_chunkListMetaData.WordsLookupDictionary);
                 reader.Skip();
             }
         }

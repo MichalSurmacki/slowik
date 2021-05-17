@@ -11,7 +11,6 @@ namespace Application.Dtos.Temporary
     [XmlRoot("sentence")]
     public class SentenceDto : IXmlSerializable
     {
-        public Guid Id { get; set; }
         public int XmlSentenceId { get; set; }
         public List<TokenDto> Tokens { get; set; }
         public string Xml { get; set; }

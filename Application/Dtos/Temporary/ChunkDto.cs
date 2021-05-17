@@ -10,9 +10,8 @@ namespace Application.Dtos.Temporary
     [XmlRoot("chunk")]
     public class ChunkDto : IXmlSerializable
     {
-        public Guid Id { get; set; }
         public int XmlChunkId { get; set; }
-        public ICollection<SentenceDto> Sentences { get; set; }
+        public List<SentenceDto> Sentences { get; set; }
 
         private ChunkListMetaDataDto _chunkListMetaData;
 

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Application.Dtos.Clarin;
 using Application.Interfaces;
@@ -103,5 +104,29 @@ namespace Application.Services
 
             return Guid.Parse(contents);
         }
+
+        public async Task<string> GetWordBase_ApiPostAsync(string word)
+        {
+            string uri = baseClarinApiUri + $"/process";
+
+            string singleWord = Regex.Replace(word.Split()[0], @"[^0-9a-zA-Z\ ]+", ""); //first world without separators
+
+            var client = _clientFactory.CreateClient();
+            string json = $@"{{
+                            ""lpmn"":""any2txt|wcrft2"",
+                            ""text"": ""{singleWord}"", 
+                            ""user"": ""slowik-test"" 
+                            }}";
+
+            StringContent jsonContent = new StringContent(json, Encoding.UTF8, "application/json");
+            
+            var response = await client.PostAsync(uri, jsonContent);
+            var contents = await response.Content.ReadAsStringAsync();
+            
+            Debug.WriteLine("**************************** GetBaseWord_ApiPsostAsync ***************************************");
+
+            return Regex.Match(contents, new string("<base>*</base>")).ToString();
+        }
+
     }
 }

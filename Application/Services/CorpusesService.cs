@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Application.Dtos;
@@ -11,6 +12,7 @@ using Application.Interfaces;
 using AutoMapper;
 using Domain.Models;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 
 namespace Application.Services
 {
@@ -114,6 +116,98 @@ namespace Application.Services
 
                 return ccl;
             }
+        }
+
+        public Task<List<TokenDto>> GetCollocationsWithDistance(Guid corpusId, string word, int distance)
+        {
+            //TODO sprawdzić czy w cache
+            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
+            
+            var collocations = new List<TokenDto>();
+            foreach(var c in corpusChunkListMetaDatas)
+            {
+                var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
+                
+                if(!chunkListMetaData.WordsLookupDictionary.ContainsKey(word)) 
+                    break;
+                List<int> chunksIdsWithWord = chunkListMetaData.WordsLookupDictionary[word];
+
+                var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, chunksIdsWithWord);
+                var chunksDtos = _mapper.Map<List<ChunkDto>>(chunks);
+
+                foreach(var chunkDtoWithWord in chunksDtos)
+                {
+                    foreach(var sentence in chunkDtoWithWord.Sentences)
+                    {
+                        if(distance < 0)
+                            sentence.Tokens.Reverse();
+                        var token = sentence.Tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(distance)).FirstOrDefault();
+                        if(token != null)
+                            collocations.Add(token);
+                    }
+                }
+            }
+
+            return Task.FromResult(collocations);
+        }
+
+        public Task<int> GetNumberOfAppearance(Guid corpusId, string word)
+        {
+            //TODO sprawdzić czy w cache
+            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
+            
+            int apperances = 0;
+            foreach(var c in corpusChunkListMetaDatas)
+            {
+                var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
+                var idsOfChunksWithWord = chunkListMetaData.WordsLookupDictionary[word]; 
+                var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, idsOfChunksWithWord);
+                var chunksDtos = _mapper.Map<List<ChunkDto>>(chunks);
+
+                foreach(var chunkDtoWithWord in chunksDtos)
+                {
+                    foreach(var sentence in chunkDtoWithWord.Sentences)
+                    {
+                        foreach(var token in sentence.Tokens.Select((value, i) => (value, i )))
+                        {
+                            if(token.value.Orth.ToLower() == word.ToLower())
+                                apperances++;
+                        }
+                    }
+                }
+            }
+            return Task.FromResult(apperances);
+        }
+
+        public Task<List<Tuple<int, string>>> GetNumberOfAppearanceWithFileNames(Guid corpusId, string word)
+        {
+            //TODO sprawdzić czy w cache
+            // var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
+            
+            // var apperancesWithFilenames = new List<Tuple<int, string>>();
+            // foreach(var c in corpusChunkListMetaDatas)
+            // {
+            //     var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
+            //     var idsOfChunksWithWord = chunkListMetaData.WordsLookupDictionary[word]; 
+            //     var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, idsOfChunksWithWord);
+            //     var chunksDtos = _mapper.Map<List<ChunkDto>>(chunks);
+
+            //     int count = 0;
+
+            //     foreach(var chunkDtoWithWord in chunksDtos)
+            //     {
+            //         foreach(var sentence in chunkDtoWithWord.Sentences)
+            //         {
+            //             foreach(var token in sentence.Tokens.Select((value, i) => (value, i )))
+            //             {
+            //                 // if(token.value.Orth.ToLower() == word.ToLower())
+            //                 //     apperancesWithFilenames.Add(new Tuple<int, string>(count));
+            //             }
+            //         }
+            //     }
+            // }
+            // return Task.FromResult(apperancesWithFilenames);
+            throw new NotImplementedException();
         }
     }
 }

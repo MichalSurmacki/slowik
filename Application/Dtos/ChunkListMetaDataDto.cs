@@ -11,7 +11,7 @@ namespace Application.Dtos
         public int NumberOfTokens { get; set; } = 0;
         public string OriginFileName { get; set; }
         public Dictionary<string, List<int>> WordsLookupDictionary { get; set; }
-        public string JsonRepresentation { get; set; }
+        public string JsonDictionaryLookUp { get; set; }
 
         public ChunkListMetaDataDto()
         {
