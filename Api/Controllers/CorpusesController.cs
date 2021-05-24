@@ -13,30 +13,27 @@ namespace Api.Controllers
     [ApiController]
     public class CorpusesController : ControllerBase
     {
-        private ICorpusesRepository _corpusesRepository;
         private ICorpusesService _corpusesService;
         private MemoryCache _cache;
 
-        public CorpusesController(ICorpusesRepository corpusesRepository, ICorpusesService corpusesService, CorpusesCache corpusesCache)
+        public CorpusesController(ICorpusesService corpusesService, CorpusesCache corpusesCache)
         {
-            _corpusesRepository = corpusesRepository;
             _corpusesService = corpusesService;
             _cache = corpusesCache.Cache;
         }
 
-        [HttpGet]
-        public ActionResult<string> Home()
-        {
-            return Ok();
-        }
-
-        /// Summary:
-        ///     Creates new coprus from zip file.
+        /// <summary>
+        /// Retrieves a zip file, creates corpus and returns guid key
+        /// </summary>
+        /// <param name="zipFile" example="example.zip">The product id</param>
+        /// <response code="200">Corpus Created</response>
+        /// <response code="400">Invalid file</response>
+        /// <response code="500">Oops! Can't recive this corpus right now</response>
         [HttpPost]
         public async Task<IActionResult> CreateCorpus(IFormFile zipFile)
         {
             if (zipFile == null)
-                return BadRequest(); 
+                return BadRequest();
 
             var corpus = await _corpusesService.CreateFromZIP_Async(zipFile);
 
@@ -45,34 +42,85 @@ namespace Api.Controllers
                 var cacheEntryOptions = new MemoryCacheEntryOptions().SetSize(1);
                 _cache.Set<CorpusDto>(corpus.Id, corpus, cacheEntryOptions);
 
-                return Ok(new Tuple<string, Guid>("CorpusGuid", corpus.Id));
+                return Ok(corpus.Id);
             }
             else
                 return BadRequest();
         }
 
-        /// Summary:
-        ///     Gets colocations on the left or right by word
+        /// <summary>
+        /// Gets colocations on the left or right by word
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     GET 
+        ///     {
+        ///        "corpusId:" : "AAAA-AAAA-AAAA-AAAA",
+        ///        "word:" : "abecadło",
+        ///        "scopeAndDirection": "2"
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="200">Word collocations</response>
+        /// <response code="400">Invalid word/corpus/rangeAndDirection</response>
+        /// <response code="500">Internal Server Error</response>
         [HttpGet("{corpusId:Guid}/collocations")]
-        public async Task<IActionResult> GetCollocations(Guid corpusId, string word, int scopeAndDirection)
+        public async Task<IActionResult> GetCollocations(Guid corpusId, string word, int rangeAndDirection, string scope)
         {
-            if(word == null || scopeAndDirection == 0 || corpusId == null)
+            if (word == null || rangeAndDirection == 0 || corpusId == null)
                 return BadRequest();
 
-            var collocations = await _corpusesService.GetCollocationsWithDistance(corpusId, word, scopeAndDirection);
+            var collocations = await _corpusesService.GetCollocations_Async(corpusId, word, rangeAndDirection);
             return Ok(collocations);
         }
 
-        /// Summary:
-        ///     Gets
+        /// <summary>
+        /// Gets number of word apperances in specified corpus
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     GET 
+        ///     {
+        ///        "corpusId:" : "AAAA-AAAA-AAAA-AAAA",
+        ///        "word:" : "abecadło"
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="200">Word apperance number in whole corpus</response>
+        /// <response code="400">Invalid word/corpus</response>
+        /// <response code="500">Internal Server Error</response>
         [HttpGet("{corpusId:Guid}/apperances")]
-        public async Task<IActionResult> GetNumberOfAppearance(Guid corpusId, string word)
+        public async Task<IActionResult> GetWordAppearance(Guid corpusId, string word)
         {
-            if(word == null || corpusId == null)
+            if (word == null || corpusId == null)
                 return BadRequest();
 
-            var apperances = await _corpusesService.GetNumberOfAppearance(corpusId, word);
+            var apperances = await _corpusesService.GetWordAppearance_Async(corpusId, word);
             return Ok(apperances);
+        }
+
+        /// <summary>
+        /// Gets numbers of word apperances in individual files contained in corpus
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     GET 
+        ///     {
+        ///        "corpusId:" : "AAAA-AAAA-AAAA-AAAA",
+        ///        "word:" : "abecadło"
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="200">Word apperance number in whole corpus</response>
+        /// <response code="400">Invalid word/corpus</response>
+        /// <response code="500">Internal Server Error</response>
+        [HttpGet("{corpusId:Guid}/apperancesInFiles")]
+        public async Task<IActionResult> GetWordAppearanceInFiles(Guid corpusId, string word)
+        {
+            return Ok(await _corpusesService.GetWordAppearanceWithFileNames_Async(corpusId, word));
         }
     }
 }

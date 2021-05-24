@@ -12,7 +12,7 @@ using Application.Interfaces;
 using AutoMapper;
 using Domain.Models;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
+using Application.Cache;
 
 namespace Application.Services
 {
@@ -118,96 +118,153 @@ namespace Application.Services
             }
         }
 
-        public Task<List<TokenDto>> GetCollocationsWithDistance(Guid corpusId, string word, int distance)
+        public Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int distance)
         {
-            //TODO sprawdzić czy w cache
+            var collocationsModel = _GetCollocationModelFromCache(corpusId, word);
+            if(collocationsModel != null && collocationsModel.Collocations != null)
+                return Task.FromResult(collocationsModel.Collocations);
+            collocationsModel = new CollocationsModel(corpusId, word /*options like distance, grouping by lexem etc.*/);    
+
             var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-            
+
             var collocations = new List<TokenDto>();
-            foreach(var c in corpusChunkListMetaDatas)
+            int count = 0;
+            foreach (var c in corpusChunkListMetaDatas)
             {
-                var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
-                
-                if(!chunkListMetaData.WordsLookupDictionary.ContainsKey(word)) 
-                    break;
-                List<int> chunksIdsWithWord = chunkListMetaData.WordsLookupDictionary[word];
+                var chunksDtos = _GetChunkDtos(c, word);
 
-                var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, chunksIdsWithWord);
-                var chunksDtos = _mapper.Map<List<ChunkDto>>(chunks);
-
-                foreach(var chunkDtoWithWord in chunksDtos)
+                int countWithFilenames = 0;
+                foreach (var chunkDtoWithWord in chunksDtos)
                 {
-                    foreach(var sentence in chunkDtoWithWord.Sentences)
+                    foreach (var sentence in chunkDtoWithWord.Sentences)
                     {
-                        if(distance < 0)
-                            sentence.Tokens.Reverse();
-                        var token = sentence.Tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(distance)).FirstOrDefault();
-                        if(token != null)
-                            collocations.Add(token);
+                        List<TokenDto> tokens = sentence.Tokens.ToList();
+                        if (distance < 0)
+                            tokens.Reverse();
+                        do
+                        {
+                            tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(distance)).ToList();
+                            var token = tokens.FirstOrDefault();
+                            if (token != null && !collocations.Contains(token))
+                                count++;
+                                countWithFilenames++;
+                                collocations.Add(token);
+                            tokens = tokens.Skip(1).ToList();
+                        } while (tokens.Any());
                     }
                 }
+                collocationsModel.WordApperancesWithFilenames.Add(new Tuple<int, string>(countWithFilenames, c.OriginFileName));
             }
+            collocationsModel.WordCountInCorpus = count;
+            collocationsModel.Collocations = collocations;
+            //TODO put collocationsModel in cache
 
             return Task.FromResult(collocations);
         }
 
-        public Task<int> GetNumberOfAppearance(Guid corpusId, string word)
+        //TODO
+        public Task<List<List<TokenDto>>> GetCollocationsBySentence_Async(Guid corpusId, string word, int distance)
         {
-            //TODO sprawdzić czy w cache
-            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-            
-            int apperances = 0;
-            foreach(var c in corpusChunkListMetaDatas)
-            {
-                var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
-                var idsOfChunksWithWord = chunkListMetaData.WordsLookupDictionary[word]; 
-                var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, idsOfChunksWithWord);
-                var chunksDtos = _mapper.Map<List<ChunkDto>>(chunks);
+            throw new NotImplementedException();
+        }
 
-                foreach(var chunkDtoWithWord in chunksDtos)
+        //TODO
+        public Task<List<List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int distance)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> GetWordAppearance_Async(Guid corpusId, string word)
+        {
+            var collocationsModel = _GetCollocationModelFromCache(corpusId, word);
+            if(collocationsModel != null)
+                return Task.FromResult(collocationsModel.WordCountInCorpus);
+            collocationsModel = new CollocationsModel(corpusId, word /*options like distance, grouping by lexem etc.*/);
+
+            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
+
+            int count = 0;
+            var apperancesWithFilenames = new List<Tuple<int, string>>();
+            foreach (var c in corpusChunkListMetaDatas)
+            {
+                var chunksDtos = _GetChunkDtos(c, word);
+
+                int countWithFilenames = 0;
+                foreach (var chunkDtoWithWord in chunksDtos)
                 {
-                    foreach(var sentence in chunkDtoWithWord.Sentences)
+                    foreach (var sentence in chunkDtoWithWord.Sentences)
                     {
-                        foreach(var token in sentence.Tokens.Select((value, i) => (value, i )))
+                        foreach (var token in sentence.Tokens.Select((value, i) => (value, i)))
                         {
-                            if(token.value.Orth.ToLower() == word.ToLower())
-                                apperances++;
+                            if (token.value.Orth.ToLower() == word.ToLower())
+                            {
+                                count++;
+                                countWithFilenames++;
+                            }
+                                
                         }
                     }
                 }
+                apperancesWithFilenames.Add(new Tuple<int, string>(countWithFilenames, c.OriginFileName));
             }
-            return Task.FromResult(apperances);
+
+            collocationsModel.WordApperancesWithFilenames = apperancesWithFilenames;
+            collocationsModel.WordCountInCorpus = count;
+            //TODO put collocationsModel in cache
+
+            return Task.FromResult(count);
         }
 
-        public Task<List<Tuple<int, string>>> GetNumberOfAppearanceWithFileNames(Guid corpusId, string word)
+        public Task<List<Tuple<int, string>>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word)
         {
-            //TODO sprawdzić czy w cache
-            // var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-            
-            // var apperancesWithFilenames = new List<Tuple<int, string>>();
-            // foreach(var c in corpusChunkListMetaDatas)
-            // {
-            //     var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
-            //     var idsOfChunksWithWord = chunkListMetaData.WordsLookupDictionary[word]; 
-            //     var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, idsOfChunksWithWord);
-            //     var chunksDtos = _mapper.Map<List<ChunkDto>>(chunks);
+            var collocationsModel = _GetCollocationModelFromCache(corpusId, word);
+            if(collocationsModel != null && collocationsModel.WordApperancesWithFilenames != null)
+                return Task.FromResult(collocationsModel.WordApperancesWithFilenames);
+            collocationsModel = new CollocationsModel(corpusId, word /*options like distance, grouping by lexem etc.*/);
 
-            //     int count = 0;
+            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
 
-            //     foreach(var chunkDtoWithWord in chunksDtos)
-            //     {
-            //         foreach(var sentence in chunkDtoWithWord.Sentences)
-            //         {
-            //             foreach(var token in sentence.Tokens.Select((value, i) => (value, i )))
-            //             {
-            //                 // if(token.value.Orth.ToLower() == word.ToLower())
-            //                 //     apperancesWithFilenames.Add(new Tuple<int, string>(count));
-            //             }
-            //         }
-            //     }
-            // }
-            // return Task.FromResult(apperancesWithFilenames);
-            throw new NotImplementedException();
+            var apperancesWithFilenames = new List<Tuple<int, string>>();
+            int count = 0;
+            foreach (var c in corpusChunkListMetaDatas)
+            {
+                var chunksDtos = _GetChunkDtos(c, word);
+
+                int countWithFilenames = 0;
+                foreach (var chunkDtoWithWord in chunksDtos)
+                {
+                    foreach (var sentence in chunkDtoWithWord.Sentences)
+                    {
+                        var innerCount = sentence.Tokens.Where(t => t.Orth.ToLower().Equals(word.ToLower())).Count();
+                        countWithFilenames += innerCount;
+                        count += innerCount;
+                    }
+                         
+                }
+                apperancesWithFilenames.Add(new Tuple<int, string>(countWithFilenames, c.OriginFileName));
+            }
+
+            collocationsModel.WordApperancesWithFilenames = apperancesWithFilenames;
+            collocationsModel.WordCountInCorpus = count;
+            //TODO put collocationsModel in cache 
+
+            return Task.FromResult(apperancesWithFilenames);
+        }
+
+        private List<ChunkDto> _GetChunkDtos(ChunkListMetaData c, string word)
+        {
+            var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
+            if (!chunkListMetaData.WordsLookupDictionary.ContainsKey(word))
+                return null;
+            List<int> idsOfChunksWithWord = chunkListMetaData.WordsLookupDictionary[word];
+            var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, idsOfChunksWithWord);
+            return _mapper.Map<List<ChunkDto>>(chunks);
+        }
+
+        //TODO check if collocationsModel exisits in cache
+        private CollocationsModel _GetCollocationModelFromCache(Guid corpusId, string word)
+        {
+            return null;
         }
     }
 }

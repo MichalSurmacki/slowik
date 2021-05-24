@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -30,6 +31,18 @@ namespace Application.Dtos.Temporary
             NoSpaceBefore = noSpaceBefore;
             _chunkListMetaData = chunkListMetaData;
             Lexems = new List<LexemDto>();
+        }
+
+        // override object.Equals
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            
+            TokenDto t = (TokenDto)obj;
+            return (Orth == t.Orth) && (NoSpaceBefore == t.NoSpaceBefore) && (Lexems.All(t.Lexems.Contains) && Lexems.Count == t.Lexems.Count);
         }
 
         public XmlSchema GetSchema()

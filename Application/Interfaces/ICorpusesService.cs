@@ -13,9 +13,14 @@ namespace Application.Interfaces
         Task<CorpusDto> CreateFromZIP_Async(IFormFile zipFile);
         Task<string> ParseToCCL_Async(ZipArchiveEntry zipArchiveEntry);
         ChunkListDto ParseCCLStringToChunkListDto(string ccl);
-        Task<List<TokenDto>> GetCollocationsWithDistance(Guid corpusId, string word, int distance);
-        Task<int> GetNumberOfAppearance(Guid corpusId, string word);
-        Task<List<Tuple<int, string>>> GetNumberOfAppearanceWithFileNames(Guid corpusId, string word);
 
+        Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int distance);
+        Task<List<List<TokenDto>>> GetCollocationsBySentence_Async(Guid corpusId, string word, int distance);
+        Task<List<List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int distance);
+        
+        Task<int> GetWordAppearance_Async(Guid corpusId, string word);
+        Task<List<Tuple<int, string>>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word);
+
+        //
     }
 }

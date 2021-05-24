@@ -34,7 +34,7 @@ namespace Api
                 c.SwaggerDoc("v1",
                     new OpenApiInfo
                     {
-                        Title = "My API - V1",
+                        Title = "Slowik API - V1",
                         Version = "v1"
                     }
                 );
