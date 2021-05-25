@@ -17,6 +17,7 @@ namespace Application
             services.AddScoped<ICorpusesService, CorpusesService>();
             services.AddScoped<IClarinService, ClarinService>();
             services.AddSingleton<CorpusesCache>();
+            services.AddScoped<ICacheRepository, CacheRepository>();
 
             // Add caching
             services.AddMemoryCache();

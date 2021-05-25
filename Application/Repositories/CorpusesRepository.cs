@@ -1,10 +1,6 @@
-using System.Xml.Serialization;
 using Application.Interfaces;
-using Application.Dtos.Temporary;
-using System.IO;
 using System.Collections.Generic;
 using System;
-using Application.Dtos;
 using Domain.Models;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
