@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
-using Application.Cache;
 using Application.Dtos;
 using Application.Dtos.Temporary;
 using AutoMapper;
@@ -46,10 +45,6 @@ namespace Application
                         }
                     }
                 );
-
-
-            CreateMap<CacheWordInfoElement, CacheCollocationsInfoElement>()
-                .ForMember(dest => dest.Collocations, t => t.Ignore());
         }
     }
 }

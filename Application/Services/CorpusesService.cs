@@ -121,9 +121,8 @@ namespace Application.Services
 
         public Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int distance)
         {
-            var element = (CacheWordInfoElement) _cache.Get(corpusId.ToString() + "|" + word);
-            var collocationsElement = _mapper.Map<CacheCollocationsInfoElement>(element);
-            if (collocationsElement != null && collocationsElement.Collocations != null)
+            var collocationsElement = _cache.Get(corpusId.ToString() + "|" + word) as CacheCollocationsInfoElement;
+            if (collocationsElement != null)
                 return Task.FromResult(collocationsElement.Collocations);
 
             CacheCollocationsInfoElement collocationsInfo = new CacheCollocationsInfoElement(corpusId, word);
@@ -145,22 +144,24 @@ namespace Application.Services
                             tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(distance)).ToList();
                             var token = tokens.FirstOrDefault();
                             if (token != null && !collocationsInfo.Collocations.Contains(token))
+                            {
                                 collocationsInfo.WordCountInCorpus++;
-                            collocationsInfo.AddApperanceInFilename(c.OriginFileName);
-                            collocationsInfo.Collocations.Add(token);
+                                collocationsInfo.AddApperanceInFilename(c.OriginFileName);
+                                collocationsInfo.Collocations.Add(token);
+                            }
                             tokens = tokens.Skip(1).ToList();
                         } while (tokens.Any());
                     }
                 }
             }
 
-            _cache.Set<CacheCollocationsInfoElement>(corpusId.ToString() + "|" + word, collocationsInfo, new MemoryCacheEntryOptions().SetSize(1).SetSlidingExpiration(TimeSpan.FromHours(1)));
+            _cache.Set<CacheCollocationsInfoElement>(corpusId.ToString() + "|" + word, collocationsInfo, new MemoryCacheEntryOptions().SetSize(1).SetSlidingExpiration(TimeSpan.FromHours(0.5)));
             return Task.FromResult(collocationsInfo.Collocations);
         }
 
         public Task<int> GetWordAppearance_Async(Guid corpusId, string word)
         {
-            var wordInfoElement = (CacheWordInfoElement) _cache.Get(corpusId.ToString() + "|" + word);
+            var wordInfoElement = _cache.Get(corpusId.ToString() + "|" + word) as CacheWordInfoElement;
             if (wordInfoElement != null)
                 return Task.FromResult(wordInfoElement.WordCountInCorpus);
 
@@ -182,7 +183,7 @@ namespace Application.Services
                 }
             }
 
-            _cache.Set<CacheWordInfoElement>(corpusId.ToString() + "|" + word, wordInfo, new MemoryCacheEntryOptions().SetSize(1).SetSlidingExpiration(TimeSpan.FromHours(1.5)));
+            _cache.Set<CacheWordInfoElement>(corpusId.ToString() + "|" + word, wordInfo, new MemoryCacheEntryOptions().SetSize(1).SetSlidingExpiration(TimeSpan.FromHours(0.5)));
             return Task.FromResult(wordInfo.WordCountInCorpus);
         }
 
@@ -213,7 +214,7 @@ namespace Application.Services
                 }
             }
 
-            _cache.Set<CacheWordInfoElement>(corpusId.ToString() + "|" + word, wordInfo, new MemoryCacheEntryOptions().SetSize(1).SetSlidingExpiration(TimeSpan.FromHours(1.5)));
+            _cache.Set<CacheWordInfoElement>(corpusId.ToString() + "|" + word, wordInfo, new MemoryCacheEntryOptions().SetSize(1).SetSlidingExpiration(TimeSpan.FromHours(0.5)));
             return Task.FromResult(wordInfo.GetApperanceInFilesDict());
         }
 
