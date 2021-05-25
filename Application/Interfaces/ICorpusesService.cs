@@ -19,7 +19,7 @@ namespace Application.Interfaces
         Task<List<List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int distance);
         
         Task<int> GetWordAppearance_Async(Guid corpusId, string word);
-        Task<List<Tuple<int, string>>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word);
+        Task<Dictionary<string, int>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word);
 
         //
     }

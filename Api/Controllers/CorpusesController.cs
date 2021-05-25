@@ -14,12 +14,10 @@ namespace Api.Controllers
     public class CorpusesController : ControllerBase
     {
         private ICorpusesService _corpusesService;
-        private MemoryCache _cache;
 
-        public CorpusesController(ICorpusesService corpusesService, CorpusesCache corpusesCache)
+        public CorpusesController(ICorpusesService corpusesService)
         {
             _corpusesService = corpusesService;
-            _cache = corpusesCache.Cache;
         }
 
         /// <summary>
@@ -38,12 +36,7 @@ namespace Api.Controllers
             var corpus = await _corpusesService.CreateFromZIP_Async(zipFile);
 
             if (corpus != null)
-            {
-                var cacheEntryOptions = new MemoryCacheEntryOptions().SetSize(1);
-                _cache.Set<CorpusDto>(corpus.Id, corpus, cacheEntryOptions);
-
                 return Ok(corpus.Id);
-            }
             else
                 return BadRequest();
         }
