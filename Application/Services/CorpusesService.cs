@@ -13,7 +13,6 @@ using AutoMapper;
 using Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Application.Cache;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace Application.Services
 {
@@ -125,37 +124,29 @@ namespace Application.Services
             if (collocations != null)
                 return collocations;
 
-            CacheCollocationsInfoElement collocationsInfo = new CacheCollocationsInfoElement(corpusId, word);
-
-            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-
-            foreach (var c in corpusChunkListMetaDatas)
+            var collocationsInfo = _Look<CacheCollocationsInfoElement>(corpusId, word, (ChunkListMetaData chlMd, ChunkDto chDto, SentenceDto SDto, ref CacheCollocationsInfoElement cInfo) =>
             {
-                var chunksDtos = _GetChunkDtos(c, word);
-                foreach (var chunkDtoWithWord in chunksDtos)
+                if (cInfo == null)
+                    cInfo = new CacheCollocationsInfoElement(corpusId, word);
+                List<TokenDto> tokens = SDto.Tokens.ToList();
+                if (distance < 0)
+                    tokens.Reverse();
+                do
                 {
-                    foreach (var sentence in chunkDtoWithWord.Sentences)
+                    tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(distance)).ToList();
+                    var token = tokens.FirstOrDefault();
+                    if (token != null)
                     {
-                        List<TokenDto> tokens = sentence.Tokens.ToList();
-                        if (distance < 0)
-                            tokens.Reverse();
-                        do
-                        {
-                            tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(distance)).ToList();
-                            var token = tokens.FirstOrDefault();
-                            if (token != null)
-                            {
-                                collocationsInfo.WordCountInCorpus++;
-                                collocationsInfo.AddApperanceInFilename(c.OriginFileName);
-                                if(!collocationsInfo.Collocations.Contains(token))                            
-                                    collocationsInfo.Collocations.Add(token);
-                            }
-                            tokens = tokens.Skip(1).ToList();
-                        } while (tokens.Any());
+                        cInfo.WordCountInCorpus++;
+                        cInfo.AddApperanceInFilename(chlMd.OriginFileName);
+                        if (!cInfo.Collocations.Contains(token))
+                            cInfo.Collocations.Add(token);
                     }
-                }
-            }
-            
+                    tokens = tokens.Skip(1).ToList();
+                } while (tokens.Any());
+                return cInfo;
+            });
+
             _cacheRepository.InsertIntoCache<CacheCollocationsInfoElement>(corpusId, word, collocationsInfo);
             return Task.FromResult(collocationsInfo.Collocations);
         }
@@ -166,23 +157,16 @@ namespace Application.Services
             if (apperances != null)
                 return apperances;
 
-            CacheWordInfoElement wordInfo = new CacheWordInfoElement(corpusId, word);
-
-            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-
-            foreach (var c in corpusChunkListMetaDatas)
+            var wordInfo = _Look<CacheWordInfoElement>(corpusId, word, (ChunkListMetaData chlMd, ChunkDto chDto, SentenceDto SDto, ref CacheWordInfoElement wInfo) =>
             {
-                var chunksDtos = _GetChunkDtos(c, word);
-                foreach (var chunkDtoWithWord in chunksDtos)
-                {
-                    foreach (var sentence in chunkDtoWithWord.Sentences)
-                    {
-                        int innerCount = sentence.Tokens.Where(t => t.Orth.ToLower().Equals(word.ToLower())).Count();
-                        wordInfo.WordCountInCorpus += innerCount;
-                        wordInfo.AddApperanceInFilename(c.OriginFileName, innerCount);
-                    }
-                }
-            }
+                if (wInfo == null)
+                    wInfo = new CacheWordInfoElement(corpusId, word);
+                int innerCount = SDto.Tokens.Where(t => t.Orth.ToLower().Equals(word.ToLower())).Count();
+                wInfo.WordCountInCorpus += innerCount;
+                wInfo.AddApperanceInFilename(chlMd.OriginFileName, innerCount);
+                return wInfo;
+            });
+
 
             _cacheRepository.InsertIntoCache<CacheWordInfoElement>(corpusId, word, wordInfo);
             return Task.FromResult(wordInfo.WordCountInCorpus);
@@ -194,26 +178,18 @@ namespace Application.Services
             if (apperancesWithFilenames != null)
                 return apperancesWithFilenames;
 
-            CacheWordInfoElement wordInfo = new CacheWordInfoElement(corpusId, word);
-
-            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-
-            foreach (var c in corpusChunkListMetaDatas)
+            var wordInfo = _Look<CacheWordInfoElement>(corpusId, word, (ChunkListMetaData chlMd, ChunkDto chDto, SentenceDto SDto, ref CacheWordInfoElement wInfo) =>
             {
-                var chunksDtos = _GetChunkDtos(c, word);
-                foreach (var chunkDtoWithWord in chunksDtos)
+                if (wInfo == null)
+                    wInfo = new CacheWordInfoElement(corpusId, word);
+                int innerCount = SDto.Tokens.Where(t => t.Orth.ToLower().Equals(word.ToLower())).Count();
+                if (innerCount > 0)
                 {
-                    foreach (var sentence in chunkDtoWithWord.Sentences)
-                    {
-                        int innerCount = sentence.Tokens.Where(t => t.Orth.ToLower().Equals(word.ToLower())).Count();
-                        if (innerCount > 0)
-                        {
-                            wordInfo.WordCountInCorpus += innerCount;
-                            wordInfo.AddApperanceInFilename(c.OriginFileName, innerCount);
-                        }
-                    }
+                    wInfo.WordCountInCorpus += innerCount;
+                    wInfo.AddApperanceInFilename(chlMd.OriginFileName, innerCount);
                 }
-            }
+                return wInfo;
+            });
 
             _cacheRepository.InsertIntoCache<CacheWordInfoElement>(corpusId, word, wordInfo);
             return Task.FromResult(wordInfo.GetApperanceInFilesDict());
@@ -226,41 +202,6 @@ namespace Application.Services
 
         public Task<List<List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int distance)
         {
-            var collocationsByParagraph = _cacheRepository.GetCollocationsByParagraph(corpusId, word);
-            if (collocationsByParagraph != null)
-                return collocationsByParagraph;
-
-            CacheCollocationsInfoElement collocationsInfo = new CacheCollocationsInfoElement(corpusId, word);
-
-            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-
-            foreach (var c in corpusChunkListMetaDatas)
-            {
-                var chunksDtos = _GetChunkDtos(c, word);
-                foreach (var chunkDtoWithWord in chunksDtos)
-                {
-                    foreach (var sentence in chunkDtoWithWord.Sentences)
-                    {
-                        List<TokenDto> tokens = sentence.Tokens.ToList();
-                        if (distance < 0)
-                            tokens.Reverse();
-                        do
-                        {
-                            tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(distance)).ToList();
-                            var token = tokens.FirstOrDefault();
-                            if (token != null && !collocationsInfo.Collocations.Contains(token))
-                            {
-                                collocationsInfo.WordCountInCorpus++;
-                                collocationsInfo.AddApperanceInFilename(c.OriginFileName);
-                                collocationsInfo.Collocations.Add(token);
-                            }
-                            tokens = tokens.Skip(1).ToList();
-                        } while (tokens.Any());
-                    }
-                }
-            }
-
-
             throw new NotImplementedException();
         }
 
@@ -272,6 +213,25 @@ namespace Application.Services
             List<int> idsOfChunksWithWord = chunkListMetaData.WordsLookupDictionary[word];
             var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, idsOfChunksWithWord);
             return _mapper.Map<List<ChunkDto>>(chunks);
+        }
+
+        private delegate T _SearchDelegate<T>(ChunkListMetaData chl, ChunkDto ch, SentenceDto s, ref T input);
+        private T _Look<T>(Guid corpusId, string word, _SearchDelegate<T> d)
+        {
+            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
+            T element = default(T);
+            foreach (var c in corpusChunkListMetaDatas)
+            {
+                var chunksDtos = _GetChunkDtos(c, word);
+                foreach (var chunkDtoWithWord in chunksDtos)
+                {
+                    foreach (var sentence in chunkDtoWithWord.Sentences)
+                    {
+                        d(c, chunkDtoWithWord, sentence, ref element);
+                    }
+                }
+            }
+            return element;
         }
     }
 }
