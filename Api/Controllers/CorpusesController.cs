@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using Application.Cache;
+using Application.Dtos;
 using Application.Dtos.Temporary;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -42,7 +45,7 @@ namespace Api.Controllers
         }
 
         /// <summary>
-        /// Gets colocations on the left or right by word
+        /// Gets colocations on the left or right by word.
         /// </summary>
         /// <remarks>
         /// Sample request:
@@ -55,17 +58,27 @@ namespace Api.Controllers
         ///     }
         ///
         /// </remarks>
-        /// <response code="200">Word collocations</response>
-        /// <response code="400">Invalid word/corpus/rangeAndDirection</response>
+        /// <response code="200">List of word collocations</response>
+        /// <response code="400">Invalid: word or corpus or direction</response>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("{corpusId:Guid}/collocations")]
-        public async Task<IActionResult> GetCollocations(Guid corpusId, string word, int rangeAndDirection, string scope)
+        public async Task<IActionResult> GetCollocations(Guid corpusId, [FromQuery][Required] string word, [FromQuery][Required] int direction, Scope scope = Scope.None)
         {
-            if (word == null || rangeAndDirection == 0 || corpusId == null)
+            if (word == null || direction == 0 || corpusId == null)
                 return BadRequest();
 
-            var collocations = await _corpusesService.GetCollocations_Async(corpusId, word, rangeAndDirection);
-            return Ok(collocations);
+            Dictionary<string, List<TokenDto>> collocations;
+            switch(scope)
+            {                    
+                case Scope.Sentence:
+                    collocations = await _corpusesService.GetCollocationsBySentence_Async(corpusId, word, direction);
+                    return Ok(collocations);
+                case Scope.Paragraph:
+                    collocations = await _corpusesService.GetCollocationsByParagraph_Async(corpusId, word, direction);
+                    return Ok(collocations);
+            }
+            var allCollocations = await _corpusesService.GetCollocations_Async(corpusId, word, direction);
+            return Ok(allCollocations);
         }
 
         /// <summary>
@@ -85,35 +98,20 @@ namespace Api.Controllers
         /// <response code="400">Invalid word/corpus</response>
         /// <response code="500">Internal Server Error</response>
         [HttpGet("{corpusId:Guid}/apperances")]
-        public async Task<IActionResult> GetWordAppearance(Guid corpusId, string word)
+        public async Task<IActionResult> GetWordAppearance(Guid corpusId, [FromQuery][Required] string word, bool groupByFiles = false)
         {
             if (word == null || corpusId == null)
                 return BadRequest();
 
-            var apperances = await _corpusesService.GetWordAppearance_Async(corpusId, word);
-            return Ok(apperances);
-        }
+            if(groupByFiles)
+            {
+                return Ok(await _corpusesService.GetWordAppearanceWithFileNames_Async(corpusId, word));
+            }    
 
-        /// <summary>
-        /// Gets numbers of word apperances in individual files contained in corpus
-        /// </summary>
-        /// <remarks>
-        /// Sample request:
-        ///
-        ///     GET 
-        ///     {
-        ///        "corpusId:" : "AAAA-AAAA-AAAA-AAAA",
-        ///        "word:" : "abecadło"
-        ///     }
-        ///
-        /// </remarks>
-        /// <response code="200">Word apperance number in whole corpus</response>
-        /// <response code="400">Invalid word/corpus</response>
-        /// <response code="500">Internal Server Error</response>
-        [HttpGet("{corpusId:Guid}/apperancesInFiles")]
-        public async Task<IActionResult> GetWordAppearanceInFiles(Guid corpusId, string word)
-        {
-            return Ok(await _corpusesService.GetWordAppearanceWithFileNames_Async(corpusId, word));
+            var apperances = await _corpusesService.GetWordAppearance_Async(corpusId, word);
+            return Ok(new Dictionary<string, int>(){
+                {"total", apperances}
+            });
         }
     }
 }

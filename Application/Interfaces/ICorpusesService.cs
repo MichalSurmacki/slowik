@@ -14,9 +14,9 @@ namespace Application.Interfaces
         Task<string> ParseToCCL_Async(ZipArchiveEntry zipArchiveEntry);
         ChunkListDto ParseCCLStringToChunkListDto(string ccl);
 
-        Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int distance);
-        Task<List<List<TokenDto>>> GetCollocationsBySentence_Async(Guid corpusId, string word, int distance);
-        Task<List<List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int distance);
+        Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int direction);
+        Task<Dictionary<string, List<TokenDto>>> GetCollocationsBySentence_Async(Guid corpusId, string word, int direction);
+        Task<Dictionary<string, List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int direction);
         
         Task<int> GetWordAppearance_Async(Guid corpusId, string word);
         Task<Dictionary<string, int>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word);

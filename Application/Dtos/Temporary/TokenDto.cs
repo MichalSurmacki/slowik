@@ -45,11 +45,6 @@ namespace Application.Dtos.Temporary
             return (Orth == t.Orth) && (NoSpaceBefore == t.NoSpaceBefore) && (Lexems.All(t.Lexems.Contains) && Lexems.Count == t.Lexems.Count);
         }
 
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
-
         public void ReadXml(XmlReader reader)
         {
             reader.MoveToContent();
@@ -95,6 +90,21 @@ namespace Application.Dtos.Temporary
         public void WriteXml(XmlWriter writer)
         {
             throw new NotImplementedException();
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public override string ToString()
+        {
+            return base.ToString();
         }
     }
 }

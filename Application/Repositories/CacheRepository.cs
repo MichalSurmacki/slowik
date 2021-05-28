@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Application.Cache;
+using Application.Dtos;
 using Application.Dtos.Temporary;
 using Application.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
@@ -18,36 +19,38 @@ namespace Application.Repositories
             _cache = corpusesCache.Cache;
         }
 
-        public Task<List<TokenDto>> GetCollocations(Guid corpusId, string word)
+        public Task<List<TokenDto>> GetCollocations(Guid corpusId, string word, int direction)
         {
             var collocationsElement = _cache.Get(corpusId.ToString() + "|" + word) as CacheCollocationsInfoElement;
-            if (collocationsElement != null)
-                return Task.FromResult(collocationsElement.Collocations);
+            if (collocationsElement != null && collocationsElement.Direction == direction)
+                return Task.FromResult(collocationsElement.GetCollocations());
             return null;
         }
 
-        public Task<List<List<TokenDto>>> GetCollocationsByParagraph(Guid corpusId, string word)
+        public Task<Dictionary<string, List<TokenDto>>> GetCollocationsByParagraph(Guid corpusId, string word, int direction)
         {
             var element = _cache.Get(corpusId.ToString() + "|" + word) as CacheCollocationsInfoElement;
             if (element != null)
             {
                 int count = 0;
-                element.CollocationsByParagraph.ForEach(l => count += l.Count);
-                if(element.Collocations.Count.Equals(count))
-                    return Task.FromResult(element.CollocationsByParagraph);
+                foreach(KeyValuePair<string, List<TokenDto>> e in element.GetCollocationsByParagraph())
+                    count += e.Value.Count;
+                if(element.GetCollocations().Count.Equals(count))
+                    return Task.FromResult(element.GetCollocationsByParagraph());
             }            
             return null;
         }
 
-        public Task<List<List<TokenDto>>> GetCollocationsBySentence(Guid corpusId, string word)
+        public Task<Dictionary<string, List<TokenDto>>> GetCollocationsBySentence(Guid corpusId, string word, int direction)
         {
             var element = _cache.Get(corpusId.ToString() + "|" + word) as CacheCollocationsInfoElement;
             if (element != null)
             {
                 int count = 0;
-                element.CollocationsBySentence.ForEach(l => count += l.Count);
-                if(element.Collocations.Count.Equals(count))
-                    return Task.FromResult(element.CollocationsBySentence);
+                foreach(KeyValuePair<string, List<TokenDto>> e in element.GetCollocationsBySentence())
+                    count += e.Value.Count;
+                if(element.GetCollocations().Count.Equals(count))
+                    return Task.FromResult(element.GetCollocationsBySentence());
             }            
             return null;
         }

@@ -20,18 +20,6 @@ namespace Application.Dtos.Temporary
             return null;
         }
 
-        // override object.Equals
-        public override bool Equals(object obj)
-        {
-            if (obj == null || GetType() != obj.GetType())
-            {
-                return false;
-            }
-            
-            LexemDto t = (LexemDto)obj;
-            return (Base == t.Base) && (CTag == t.CTag) && (Disamb == t.Disamb);
-        }
-
         public void ReadXml(XmlReader reader)
         {
             reader.MoveToContent();
@@ -61,6 +49,28 @@ namespace Application.Dtos.Temporary
         public void WriteXml(XmlWriter writer)
         {
             throw new System.NotImplementedException();
+        }
+
+        // override object.Equals
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            
+            LexemDto t = (LexemDto)obj;
+            return (Base == t.Base) && (CTag == t.CTag) && (Disamb == t.Disamb);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        } 
+
+        public override string ToString()
+        {
+            return base.ToString();
         }
     }
 }

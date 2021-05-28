@@ -7,6 +7,7 @@ using Application;
 using Infrastructure;
 using Microsoft.OpenApi.Models;
 using System.IO;
+using System.Text.Json.Serialization;
 
 namespace Api
 {
@@ -22,7 +23,8 @@ namespace Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers()
+                    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
             // DependencyInjection.cs in Application and Infrastructure
             services.AddApplication();

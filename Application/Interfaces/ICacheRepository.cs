@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Application.Cache;
+using Application.Dtos;
 using Application.Dtos.Temporary;
 
 namespace Application.Interfaces
@@ -15,8 +16,8 @@ namespace Application.Interfaces
         Task<Dictionary<string, int>> GetWordAppearanceWithFilenames(Guid corpusId, string word);
         
         Task<CacheCollocationsInfoElement> GetCollocationsInfoElement(Guid corpusId, string word);
-        Task<List<TokenDto>> GetCollocations(Guid corpusId, string word);
-        Task<List<List<TokenDto>>> GetCollocationsByParagraph(Guid corpusId, string word);
-        Task<List<List<TokenDto>>> GetCollocationsBySentence(Guid corpusId, string word);
+        Task<List<TokenDto>> GetCollocations(Guid corpusId, string word, int direction);
+        Task<Dictionary<string, List<TokenDto>>> GetCollocationsByParagraph(Guid corpusId, string word, int direction);
+        Task<Dictionary<string, List<TokenDto>>> GetCollocationsBySentence(Guid corpusId, string word, int direction);
     }
 }
