@@ -1,4 +1,5 @@
 using System;
+using System.IO.Compression;
 using System.Threading.Tasks;
 using Application.Dtos.Clarin;
 
@@ -6,6 +7,9 @@ namespace Application.Interfaces
 {
     public interface IClarinService
     {
+        Task<string> GetCCLStringFromZipArchiveEntry(ZipArchiveEntry entry);
+
+
         /// <summary>
         /// Makes 'post request' to http://ws.clarin-pl.eu/nlprest2/base/upload.
         /// Posts binary file (which contain text to process) with header: Content-Type: binary/octet-stream

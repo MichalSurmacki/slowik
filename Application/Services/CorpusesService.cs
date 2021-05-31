@@ -13,22 +13,26 @@ using AutoMapper;
 using Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Application.Cache;
+using Application.Dtos.Collocations;
+using Application.Dtos.Words;
 
 namespace Application.Services
 {
     //this class realizes operations - reading, searching etc. on corpuses
     public class CorpusesService : ICorpusesService
     {
-        private readonly IClarinService _clarinService;
         private readonly ICorpusesRepository _corpusesRepository;
+        private readonly IClarinService _clarinService;
         private readonly ICacheRepository _cacheRepository;
+        private readonly ISearchCorpusService _searchCorpusService;
         private readonly IMapper _mapper;
 
-        public CorpusesService(IClarinService clarinService, ICorpusesRepository corpusesRepository,
+        public CorpusesService(IClarinService clarinService, ISearchCorpusService searchCorpusService, ICorpusesRepository corpusesRepository,
                                 IMapper mapper, ICacheRepository cacheRepository)
         {
-            _clarinService = clarinService;
             _corpusesRepository = corpusesRepository;
+            _clarinService = clarinService;
+            _searchCorpusService = searchCorpusService;
             _mapper = mapper;
             _cacheRepository = cacheRepository;
         }
@@ -118,195 +122,64 @@ namespace Application.Services
             return result;
         }
 
-        public Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int direction)
+        public async Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int direction)
         {
             var collocations = _cacheRepository.GetCollocations(corpusId, word, direction);
             if (collocations != null)
-                return collocations;
+                return await collocations;
 
-            var collocationsInfo = _Look<CacheCollocationsInfoElement>(corpusId, word, direction, Scope.None,
-            (ChunkListMetaData chlMd, ChunkDto chDto, ref CacheCollocationsInfoElement cInfo) =>
-            {
-                if (cInfo == null)
-                        cInfo = new CacheCollocationsInfoElement(corpusId, word, direction, Scope.None);
-                
-                foreach (var sentence in chDto.Sentences)
-                {
-                    List<TokenDto> tokens = sentence.Tokens.ToList();
-                    if (direction < 0)
-                        tokens.Reverse();
-                    do
-                    {
-                        tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(direction)).ToList();
-                        var token = tokens.FirstOrDefault();
-                        if (token != null)
-                        {
-                            cInfo.WordCountInCorpus++;
-                            cInfo.AddApperanceInFilename(chlMd.OriginFileName);
-                            cInfo.AddCollocation(token);
-                        }
-                        tokens = tokens.Skip(1).ToList();
-                    } while (tokens.Any());
-                }
-                return cInfo;
-            });
-            if(collocationsInfo == null)
-                collocationsInfo = new CacheCollocationsInfoElement(corpusId, word, direction, Scope.Paragraph);
+            var xd = await _searchCorpusService.GetAllCollocationsAsync(corpusId, word, direction);
 
-            _cacheRepository.InsertIntoCache<CacheCollocationsInfoElement>(corpusId, word, collocationsInfo);
-            return Task.FromResult(collocationsInfo.GetCollocations());
+            _cacheRepository.InsertIntoCache<CollocationsInfo>(corpusId, word, xd);
+            return await Task.FromResult(xd.Collocations);
         }
 
-        public Task<Dictionary<string, List<TokenDto>>> GetCollocationsBySentence_Async(Guid corpusId, string word, int direction)
+        public async Task<List<CollocationsMetaData>> GetCollocationsBySentence_Async(Guid corpusId, string word, int direction)
         {
             var collocations = _cacheRepository.GetCollocationsBySentence(corpusId, word, direction);
             if (collocations != null)
-                return collocations;
+                return await collocations;
 
-            var collocationsInfo = _Look<CacheCollocationsInfoElement>(corpusId, word, direction, Scope.Sentence,
-            (ChunkListMetaData chlMd, ChunkDto chDto, ref CacheCollocationsInfoElement cInfo) =>
-            {
-                if (cInfo == null)
-                        cInfo = new CacheCollocationsInfoElement(corpusId, word, direction, Scope.Sentence);
-                foreach (var sentence in chDto.Sentences)
-                {
-                    List<TokenDto> tokens = sentence.Tokens.ToList();
-                    if (direction < 0)
-                        tokens.Reverse();
-                    do
-                    {
-                        tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(direction)).ToList();
-                        var token = tokens.FirstOrDefault();
-                        if (token != null)
-                        {
-                            cInfo.WordCountInCorpus++;
-                            cInfo.AddApperanceInFilename(chlMd.OriginFileName);
-                            cInfo.AddCollocationBySentence(sentence.XmlSentenceId.ToString(), token);
-                            cInfo.AddCollocation(token);
-                        }
-                        tokens = tokens.Skip(1).ToList();
-                    } while (tokens.Any());
-                }
-                return cInfo;
-            });
-            if(collocationsInfo == null)
-                collocationsInfo = new CacheCollocationsInfoElement(corpusId, word, direction, Scope.Paragraph);
+            var xd = await _searchCorpusService.GetCollocationsBySentenceAsync(corpusId, word, direction);
 
-            _cacheRepository.InsertIntoCache<CacheCollocationsInfoElement>(corpusId, word, collocationsInfo);
-            return Task.FromResult(collocationsInfo.GetCollocationsBySentence());
+            _cacheRepository.InsertIntoCache<CollocationsInfo>(corpusId, word, xd);
+            return await Task.FromResult(xd.CollocationsBySentence);
         }
 
-        public Task<Dictionary<string, List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int direction)
+        public async Task<List<CollocationsMetaData>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int direction)
         {
             var collocationsByParagraph = _cacheRepository.GetCollocationsByParagraph(corpusId, word, direction);
             if (collocationsByParagraph != null)
-                return collocationsByParagraph;
+                return await collocationsByParagraph;
 
-            var collocationsInfo = _Look<CacheCollocationsInfoElement>(corpusId, word, direction, Scope.Sentence,
-            (ChunkListMetaData chlMd, ChunkDto chDto, ref CacheCollocationsInfoElement cInfo) =>
-            {
-                if (cInfo == null)
-                    cInfo = new CacheCollocationsInfoElement(corpusId, word, direction, Scope.Sentence);
-                var tokens = chDto.Sentences.SelectMany(s => s.Tokens).ToList();
-                if (direction < 0)
-                        tokens.Reverse();
-                    do
-                    {
-                        tokens = tokens.SkipWhile(t => !t.Orth.ToLower().Equals(word.ToLower())).Skip(Math.Abs(direction)).ToList();
-                        var token = tokens.FirstOrDefault();
-                        if (token != null)
-                        {
-                            cInfo.WordCountInCorpus++;
-                            cInfo.AddApperanceInFilename(chlMd.OriginFileName);
-                            cInfo.AddCollocationByParagraph(chDto.XmlChunkId.ToString(), token);
-                            cInfo.AddCollocation(token);
-                        }
-                        tokens = tokens.Skip(1).ToList();
-                    } while (tokens.Any());
-                return cInfo;
-            });
-            if(collocationsInfo == null)
-                collocationsInfo = new CacheCollocationsInfoElement(corpusId, word, direction, Scope.Paragraph);
-            
-            _cacheRepository.InsertIntoCache<CacheCollocationsInfoElement>(corpusId, word, collocationsInfo);
-            return Task.FromResult(collocationsInfo.GetCollocationsByParagraph());;
+            var xd = await _searchCorpusService.GetCollocationsByParagraphAsync(corpusId, word, direction);
+
+            _cacheRepository.InsertIntoCache<CollocationsInfo>(corpusId, word, xd);
+            return await Task.FromResult(xd.CollocationsByParagraph);;
         }
 
-        public Task<int> GetWordAppearance_Async(Guid corpusId, string word)
+        public async Task<int> GetWordAppearance_Async(Guid corpusId, string word)
         {
             var apperances = _cacheRepository.GetWordAppearance(corpusId, word);
             if (apperances != null)
-                return apperances;
+                return await apperances;
 
-            var wordInfo = _Look<CacheWordInfoElement>(corpusId, word, 0, Scope.None,
-            (ChunkListMetaData chlMd, ChunkDto chDto, ref CacheWordInfoElement wInfo) =>
-            {
-                if (wInfo == null)
-                        wInfo = new CacheWordInfoElement(corpusId, word);
-                foreach (var sentence in chDto.Sentences)
-                {
-                    int innerCount = sentence.Tokens.Where(t => t.Orth.ToLower().Equals(word.ToLower())).Count();
-                    wInfo.WordCountInCorpus += innerCount;
-                    wInfo.AddApperanceInFilename(chlMd.OriginFileName, innerCount);
-                }
-                return wInfo;
-            });
-            if(wordInfo == null)
-                wordInfo = new CacheWordInfoElement(corpusId, word);
+            var xd = await _searchCorpusService.GetApperancesWithFilenamesAsync(corpusId, word);
 
-            _cacheRepository.InsertIntoCache<CacheWordInfoElement>(corpusId, word, wordInfo);
-            return Task.FromResult(wordInfo.WordCountInCorpus);
+            _cacheRepository.InsertIntoCache<WordInfo>(corpusId, word, xd);
+            return await Task.FromResult(xd.WordCountInCorpus);
         }
 
-        public Task<Dictionary<string, int>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word)
+        public async Task<Dictionary<string, int>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word)
         {
             var apperancesWithFilenames = _cacheRepository.GetWordAppearanceWithFilenames(corpusId, word);
             if (apperancesWithFilenames != null)
-                return apperancesWithFilenames;
+                return await apperancesWithFilenames;
 
-            var wordInfo = _Look<CacheWordInfoElement>(corpusId, word, 0, Scope.None,
-            (ChunkListMetaData chlMd, ChunkDto chDto, ref CacheWordInfoElement wInfo) =>
-            {
-                if (wInfo == null)
-                    wInfo = new CacheWordInfoElement(corpusId, word);
-                foreach (var sentence in chDto.Sentences)
-                {
-                    int innerCount = sentence.Tokens.Where(t => t.Orth.ToLower().Equals(word.ToLower())).Count();
-                    if (innerCount > 0)
-                    {
-                        wInfo.WordCountInCorpus += innerCount;
-                        wInfo.AddApperanceInFilename(chlMd.OriginFileName, innerCount);
-                    }
-                }
-                return wInfo;
-            });
-            if(wordInfo == null)
-                wordInfo = new CacheWordInfoElement(corpusId, word);
+            var xd = await _searchCorpusService.GetApperancesWithFilenamesAsync(corpusId, word);
 
-            _cacheRepository.InsertIntoCache<CacheWordInfoElement>(corpusId, word, wordInfo);
-            return Task.FromResult(wordInfo.GetApperanceInFilesDict());
-        }
-
-        private delegate T _SearchDelegate<T>(ChunkListMetaData chl, ChunkDto ch, ref T input);
-        private T _Look<T>(Guid corpusId, string word, int distance, Scope scope, _SearchDelegate<T> d)
-        {
-            var corpusChunkListMetaDatas = _corpusesRepository.GetChunkListMetaDatasByCorpusId(corpusId);
-            T element = default(T);
-            foreach (var c in corpusChunkListMetaDatas)
-            {
-                List<ChunkDto> chunksDtos;
-                var chunkListMetaData = _mapper.Map<ChunkListMetaDataDto>(c);
-                if (!chunkListMetaData.WordsLookupDictionary.ContainsKey(word))
-                    continue;
-                List<int> idsOfChunksWithWord = chunkListMetaData.WordsLookupDictionary[word];
-                var chunks = _corpusesRepository.GetChunksByChunkListIdAndXmlChunkId(c.ChunkList.Id, idsOfChunksWithWord);
-                chunksDtos = _mapper.Map<List<ChunkDto>>(chunks);
-                foreach (var chunkDtoWithWord in chunksDtos)
-                {
-                    d(c, chunkDtoWithWord, ref element);
-                }
-            }
-            return element;
+            _cacheRepository.InsertIntoCache<WordInfo>(corpusId, word, xd);
+            return await Task.FromResult(xd.FilenameWithWordCountDict);
         }
     }
 }

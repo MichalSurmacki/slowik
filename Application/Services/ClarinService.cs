@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -7,6 +9,8 @@ using System.Threading.Tasks;
 using Application.Dtos.Clarin;
 using Application.Interfaces;
 using Newtonsoft.Json.Linq;
+using Polly;
+using Polly.Retry;
 
 namespace Application.Services
 {
@@ -31,6 +35,7 @@ namespace Application.Services
             var contents = await response.Content.ReadAsStringAsync();
 
             Debug.WriteLine("****************************** DownloadCompletedTask_ApiGetAsync *****************************************");
+            Debug.WriteLine(uri);
 
             return contents;
         }
@@ -128,5 +133,53 @@ namespace Application.Services
             return Regex.Match(contents, new string("<base>*</base>")).ToString();
         }
 
+        public async Task<string> GetCCLStringFromZipArchiveEntry(ZipArchiveEntry entry)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                entry.Open().CopyTo(ms);
+
+                var fileId = await UploadFile_ApiPostAsync(ms.ToArray());
+                var taskId = await UseWCRFT2Tager_ApiPostAsync(fileId);
+
+                var response = await Policy
+                    .HandleResult<TaskStatusDto>(status => status.Status == "DONE")
+                    .WaitAndRetryAsync(10_000, i => TimeSpan.FromMilliseconds(i * 500))
+                    .ExecuteAsync(() =>
+                    {
+                        return GetTaskStatus_ApiGetAsync(taskId);
+                    });
+
+                string ccl = "";
+                if (response.Status != "ERROR")
+                    ccl = await DownloadCompletedTask_ApiGetAsync(response.ResultFileId);
+
+                return ccl;
+
+
+                // TaskStatusDto taskStatus;
+                // string ccl = "";
+                // do
+                // {
+                //     taskStatus = await GetTaskStatus_ApiGetAsync(taskId);
+                //     if (taskStatus.Status == "ERROR")
+                //     {
+                //         ccl = $"CLARIN ERROR WHILE PARSING|{entry.Name}";
+                //         break;
+                //     }
+                //     else if (taskStatus.UnknowStatus)
+                //     {
+                //         ccl = $"CLARIN UNKNOW STATUS WHILE PARSING:|{entry.Name}";
+                //         break;
+                //     }
+                //     else if (taskStatus.Status != "DONE")
+                //     {
+                //         //czekamy pół sekundy może się coś zmieni
+                //         await Task.Delay(500);
+                //     }
+
+                // } while (taskStatus.Status != "DONE");
+            }
+        }
     }
 }
