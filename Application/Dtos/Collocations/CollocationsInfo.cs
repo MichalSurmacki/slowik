@@ -1,25 +1,24 @@
 using System;
 using System.Collections.Generic;
-using Application.Dtos;
-using Application.Dtos.Collocations;
 using Application.Dtos.Temporary;
+using Application.Dtos.Words;
 
-namespace Application.Cache
+namespace Application.Dtos.Collocations
 {
-    public class CacheCollocationsInfoElement 
+    public class CollocationsInfo : WordInfo
     {
-        // public readonly int Direction;
-        // private List<TokenDto> _collocations = new List<TokenDto>();
-        // private List<CollocationsInfo> _collocationsByParagraph = new List<CollocationsInfo>();
-        // private List<CollocationsInfo> _collocationsBySentence = new List<CollocationsInfo>();
-        // public CacheCollocationsInfoElement(Guid corpusId, string word, int direction) : base(corpusId, word)
-        // {
-        //     Direction = direction;
-        // }
+        public readonly int Direction;
+        public List<TokenDto> Collocations { get; set; } = new List<TokenDto>();
+        public List<CollocationsMetaData> CollocationsByParagraph { get; set; } = new List<CollocationsMetaData>();
+        public List<CollocationsMetaData> CollocationsBySentence { get; set; } = new List<CollocationsMetaData>();
+        public CollocationsInfo(Guid corpusId, string word, int direction) : base(corpusId, word)
+        {
+            Direction = direction;
+        }
 
         // public List<TokenDto> GetCollocations() => _collocations;
-        // public List<CollocationsInfo> GetCollocationsBySentence() => _collocationsBySentence;
-        // public List<CollocationsInfo> GetCollocationsByParagraph() => _collocationsByParagraph;
+        // public List<CollocationsData> GetCollocationsBySentence() => _collocationsBySentence;
+        // public List<CollocationsData> GetCollocationsByParagraph() => _collocationsByParagraph;
 
         // public void AddCollocationBySentence(string sentenceId, TokenDto token)
         // {

@@ -67,15 +67,14 @@ namespace Api.Controllers
             if (word == null || direction == 0 || corpusId == null)
                 return BadRequest();
 
-            Dictionary<string, List<TokenDto>> collocations;
             switch(scope)
             {                    
                 case Scope.Sentence:
-                    collocations = await _corpusesService.GetCollocationsBySentence_Async(corpusId, word, direction);
-                    return Ok(collocations);
+                    var ddd = await _corpusesService.GetCollocationsBySentence_Async(corpusId, word, direction); 
+                    return Ok(ddd);
                 case Scope.Paragraph:
-                    collocations = await _corpusesService.GetCollocationsByParagraph_Async(corpusId, word, direction);
-                    return Ok(collocations);
+                    var dd = await _corpusesService.GetCollocationsByParagraph_Async(corpusId, word, direction);
+                    return Ok(dd);
             }
             var allCollocations = await _corpusesService.GetCollocations_Async(corpusId, word, direction);
             return Ok(allCollocations);

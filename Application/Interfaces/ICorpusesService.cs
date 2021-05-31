@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using Application.Dtos.Collocations;
 using Application.Dtos.Temporary;
 using Microsoft.AspNetCore.Http;
 
@@ -15,8 +16,8 @@ namespace Application.Interfaces
         ChunkListDto ParseCCLStringToChunkListDto(string ccl);
 
         Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int direction);
-        Task<Dictionary<string, List<TokenDto>>> GetCollocationsBySentence_Async(Guid corpusId, string word, int direction);
-        Task<Dictionary<string, List<TokenDto>>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int direction);
+        Task<List<CollocationsMetaData>> GetCollocationsBySentence_Async(Guid corpusId, string word, int direction);
+        Task<List<CollocationsMetaData>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int direction);
         
         Task<int> GetWordAppearance_Async(Guid corpusId, string word);
         Task<Dictionary<string, int>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word);
