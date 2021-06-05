@@ -12,7 +12,6 @@ using Application.Interfaces;
 using AutoMapper;
 using Domain.Models;
 using Microsoft.AspNetCore.Http;
-using Application.Cache;
 using Application.Dtos.Collocations;
 using Application.Dtos.Words;
 
@@ -21,6 +20,7 @@ namespace Application.Services
     //this class realizes operations - reading, searching etc. on corpuses
     public class CorpusesService : ICorpusesService
     {
+        private readonly IArchiveService _archivesService;
         private readonly ICorpusesRepository _corpusesRepository;
         private readonly IClarinService _clarinService;
         private readonly ICacheRepository _cacheRepository;
@@ -28,8 +28,9 @@ namespace Application.Services
         private readonly IMapper _mapper;
 
         public CorpusesService(IClarinService clarinService, ISearchCorpusService searchCorpusService, ICorpusesRepository corpusesRepository,
-                                IMapper mapper, ICacheRepository cacheRepository)
+                                IArchiveService archivesService, IMapper mapper, ICacheRepository cacheRepository)
         {
+            _archivesService = archivesService;
             _corpusesRepository = corpusesRepository;
             _clarinService = clarinService;
             _searchCorpusService = searchCorpusService;
@@ -37,55 +38,17 @@ namespace Application.Services
             _cacheRepository = cacheRepository;
         }
 
-        public async Task<string> ParseToCCL_Async(ZipArchiveEntry entry)
-        {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                entry.Open().CopyTo(ms);
-
-                var fileId = await _clarinService.UploadFile_ApiPostAsync(ms.ToArray());
-                var taskId = await _clarinService.UseWCRFT2Tager_ApiPostAsync(fileId);
-
-                TaskStatusDto taskStatus;
-                string ccl = "";
-                do
-                {
-                    taskStatus = await _clarinService.GetTaskStatus_ApiGetAsync(taskId);
-                    if (taskStatus.Status == "ERROR")
-                    {
-                        ccl = $"CLARIN ERROR WHILE PARSING|{entry.Name}";
-                        break;
-                    }
-                    else if (taskStatus.UnknowStatus)
-                    {
-                        ccl = $"CLARIN UNKNOW STATUS WHILE PARSING:|{entry.Name}";
-                        break;
-                    }
-                    else if (taskStatus.Status != "DONE")
-                    {
-                        //czekamy pół sekundy może się coś zmieni
-                        await Task.Delay(500);
-                    }
-
-                } while (taskStatus.Status != "DONE");
-
-                if (taskStatus.Status != "ERROR")
-                    ccl = await _clarinService.DownloadCompletedTask_ApiGetAsync(taskStatus.ResultFileId);
-
-                return ccl;
-            }
-        }
-
         public async Task<CorpusDto> CreateFromZIP_Async(IFormFile zipFile)
-        {
+        {      
+            var zipArchive = _archivesService.GetZipArchiveFromIFormFile(zipFile);
+            if(zipArchive == null)
+                return null;
+
             CorpusDto corpusDto = new CorpusDto();
-            try
-            {
-                var archive = new ZipArchive(zipFile.OpenReadStream(), ZipArchiveMode.Read);
-                var CCLs = new List<string>();
-                foreach (var e in archive.Entries)
+            var CCLs = new List<string>();
+                foreach (var e in zipArchive.Entries)
                 {
-                    var ccl = await ParseToCCL_Async(e);
+                    var ccl = await _clarinService.GetCCLStringFromZipArchiveEntry(e);
                     CCLs.Add(ccl);
                     var chunkListDto = ParseCCLStringToChunkListDto(ccl);
                     chunkListDto._chunkListMetaData.OriginFileName = e.Name;
@@ -101,13 +64,6 @@ namespace Application.Services
                 corpusDto.Id = corpus.Id;
 
                 return corpusDto;
-            }
-            catch (Exception ex)
-            {
-                if (ex is ArgumentException || ex is ArgumentNullException || ex is ArgumentOutOfRangeException || ex is InvalidDataException)
-                    return null;
-                throw;
-            }
         }
 
         public ChunkListDto ParseCCLStringToChunkListDto(string ccl)
@@ -118,7 +74,6 @@ namespace Application.Services
             {
                 result = (ChunkListDto)serializer.Deserialize(reader);
             }
-
             return result;
         }
 
