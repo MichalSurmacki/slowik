@@ -12,7 +12,6 @@ namespace Application.Interfaces
     {   
         //funkcja korzystająca z api clarin i zwracająca listę otrzymanych otagowanych XML'i
         Task<CorpusDto> CreateFromZIP_Async(IFormFile zipFile);
-        Task<string> ParseToCCL_Async(ZipArchiveEntry zipArchiveEntry);
         ChunkListDto ParseCCLStringToChunkListDto(string ccl);
 
         Task<List<TokenDto>> GetCollocations_Async(Guid corpusId, string word, int direction);

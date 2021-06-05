@@ -17,6 +17,7 @@ namespace Application
             services.AddScoped<ICorpusesService, CorpusesService>();
             services.AddScoped<IClarinService, ClarinService>();
             services.AddScoped<ISearchCorpusService, SearchCorpusService>();
+            services.AddScoped<IArchiveService, ArchiveService>();
             services.AddSingleton<CorpusesCache>();
             services.AddScoped<ICacheRepository, CacheRepository>();
 
