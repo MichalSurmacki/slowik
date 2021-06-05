@@ -90,8 +90,8 @@ namespace Application.Services
         {
             string uri = baseClarinApiUri + "/startTask";
 
-            string json = $@"{{      
-                            ""lpmn"":""any2txt|wcrft2({{\""guesser\"":false, \""morfeusz2\"":true}})"",
+            string json = $@"{{
+                            ""lpmn"":""any2txt|morphoDita({{\""guesser\"":false, \""allforms\"":false, \""model\"":\""XXI\""}})"",
                             ""file"": ""{uploadedFileId}"",
                             ""user"": ""slowik-test"" 
                             }}";
@@ -143,7 +143,7 @@ namespace Application.Services
                 var taskId = await UseWCRFT2Tager_ApiPostAsync(fileId);
 
                 var response = await Policy
-                    .HandleResult<TaskStatusDto>(status => status.Status == "DONE")
+                    .HandleResult<TaskStatusDto>(status => status.Status != "DONE")
                     .WaitAndRetryAsync(10_000, i => TimeSpan.FromMilliseconds(i * 500))
                     .ExecuteAsync(() =>
                     {
@@ -155,30 +155,6 @@ namespace Application.Services
                     ccl = await DownloadCompletedTask_ApiGetAsync(response.ResultFileId);
 
                 return ccl;
-
-
-                // TaskStatusDto taskStatus;
-                // string ccl = "";
-                // do
-                // {
-                //     taskStatus = await GetTaskStatus_ApiGetAsync(taskId);
-                //     if (taskStatus.Status == "ERROR")
-                //     {
-                //         ccl = $"CLARIN ERROR WHILE PARSING|{entry.Name}";
-                //         break;
-                //     }
-                //     else if (taskStatus.UnknowStatus)
-                //     {
-                //         ccl = $"CLARIN UNKNOW STATUS WHILE PARSING:|{entry.Name}";
-                //         break;
-                //     }
-                //     else if (taskStatus.Status != "DONE")
-                //     {
-                //         //czekamy pół sekundy może się coś zmieni
-                //         await Task.Delay(500);
-                //     }
-
-                // } while (taskStatus.Status != "DONE");
             }
         }
     }
