@@ -1,12 +1,12 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-bionic
 WORKDIR /app
 
 COPY . ./
+
 RUN dotnet restore
 RUN dotnet publish Api -c Release -o out
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
-WORKDIR /app
-COPY --from=build-env /app/out .
+RUN dotnet tool install --global dotnet-ef
 
-ENTRYPOINT ["dotnet", "Api.dll"]
+RUN chmod +x docker-entrypoint.sh
+ENTRYPOINT ./docker-entrypoint.sh

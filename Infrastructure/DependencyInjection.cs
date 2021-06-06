@@ -1,4 +1,5 @@
 //configuration for infrastructure - called in Startup.cs
+using System.Linq;
 using Application.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -18,9 +19,11 @@ namespace Infrastructure
             builder.ConnectionString = configuration.GetConnectionString("SlowikConnection");
             builder.UserID = configuration["UserID"];
             builder.Password = configuration["Password"];
+            builder.DataSource = configuration["Datasource"] ?? "localhost,1433";
+            builder.InitialCatalog = configuration["InitialCatalog"] ?? "slowikDb";
 
             services.AddDbContext<SlowikContext>(opt => opt.UseSqlServer(builder.ConnectionString));
-
+    
             return services;
         }
     }

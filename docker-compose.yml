@@ -1,0 +1,21 @@
+version: "3.9"
+services: 
+  ms-sql-server:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment: 
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "slowik-api123!"
+      MSSQL_SA_PASSWORD: "slowik-api123!"
+      MSSQL_PID: Express
+    ports: 
+      - "1433:1433"
+  api:
+    build: .
+    ports:
+      - "8080:80"
+    environment: 
+      UserID: "SA"
+      Password: "slowik-api123!"
+      Datasource: "ms-sql-server,1433"
+    depends_on: 
+      - ms-sql-server

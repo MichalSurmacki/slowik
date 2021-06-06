@@ -8,11 +8,15 @@ using Infrastructure;
 using Microsoft.OpenApi.Models;
 using System.IO;
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Api
 {
     public class Startup
     {
+        readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -23,12 +27,25 @@ namespace Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(options =>
+            {
+            options.AddPolicy(name: MyAllowSpecificOrigins,
+                              builder =>
+                              {
+                                  builder.WithOrigins("http://localhost:3000");
+                              });
+            });
+
             services.AddControllers()
                     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
             // DependencyInjection.cs in Application and Infrastructure
+            System.Console.WriteLine("Adding application...");
             services.AddApplication();
+            System.Console.WriteLine("application added");
+            System.Console.WriteLine("Adding infrastructure");
             services.AddInfrastructure(Configuration);
+            System.Console.WriteLine("infrastructure added");
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
@@ -65,12 +82,28 @@ namespace Api
 
             app.UseRouting();
 
+
+            app.UseCors(MyAllowSpecificOrigins);
+
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
+
+            // // for applying migrations while deploying via docker
+            // using (var serviceScope = app.ApplicationServices.CreateScope())
+            // {
+            //     var context = serviceScope.ServiceProvider.GetService<SlowikContext>();
+            //     if (context.Database.GetPendingMigrations().Any())
+            //     {
+            //         System.Console.WriteLine("migrations");
+            //         context.Database.Migrate();
+            //         System.Console.WriteLine("migrations after");
+            //     }
+            // }
         }
     }
 }
