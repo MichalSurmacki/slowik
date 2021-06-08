@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-run_cmd="dotnet /app/out/Api.dll"
+# run_cmd="dotnet /app/out/Api.dll"
 
 export PATH="$PATH:/root/.dotnet/tools"
 
@@ -13,5 +13,5 @@ until dotnet ef database update -s ./Api/; do
 done
 
 >&2 echo "DB Migrations complete, starting app."
->&2 echo "Running': $run_cmd"
-exec $run_cmd
+# >&2 echo "Running': $run_cmd"
+dotnet /app/out/Api.dll --urls=http://0.0.0.0:80
