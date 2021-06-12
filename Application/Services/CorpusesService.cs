@@ -134,7 +134,7 @@ namespace Application.Services
             var xd = await _searchCorpusService.GetApperancesWithFilenamesAsync(corpusId, word);
 
             _cacheRepository.InsertIntoCache<WordInfo>(corpusId, word, xd);
-            return await Task.FromResult(xd.FilenameWithWordCountDict);
+            return await Task.FromResult(xd != null ? xd.FilenameWithWordCountDict: null);
         }
     }
 }
