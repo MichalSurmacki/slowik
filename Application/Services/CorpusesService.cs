@@ -86,7 +86,7 @@ namespace Application.Services
             var xd = await _searchCorpusService.GetAllCollocationsAsync(corpusId, word, direction);
 
             _cacheRepository.InsertIntoCache<CollocationsInfo>(corpusId, word, xd);
-            return await Task.FromResult(xd.Collocations);
+            return await Task.FromResult(xd != null ? xd.Collocations: null);
         }
 
         public async Task<List<CollocationsMetaData>> GetCollocationsBySentence_Async(Guid corpusId, string word, int direction)
