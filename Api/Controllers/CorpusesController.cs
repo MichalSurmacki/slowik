@@ -28,18 +28,21 @@ namespace Api.Controllers
         /// <summary>
         /// Retrieves a zip file, creates corpus and returns guid key
         /// </summary>
-        /// <param name="zipFile" example="example.zip">The product id</param>
+        /// <param name="zipFile" example="example.zip">Zip file containing corpus files</param>
+        /// <param name="email" example="exmlp@exmlp.exmlp">Email address for sending corpus guid</param>
         /// <response code="200">Corpus Created</response>
         /// <response code="400">Invalid file</response>
         /// <response code="500">Oops! Can't recive this corpus right now</response>
         [HttpPost]
-        public async Task<IActionResult> CreateCorpus(IFormFile zipFile, string email)
+        public async Task<IActionResult> CreateCorpus([Required] IFormFile zipFile, string email)
         {
             if (zipFile == null)
                 return BadRequest();
 
             var corpus = await _corpusesService.CreateFromZIP_Async(zipFile);
-            _emailService.SendCorpusGuidViaEmail(email, corpus.Id);
+            
+            if(!String.IsNullOrEmpty(email))
+                _emailService.SendCorpusGuidViaEmail(email, corpus.Id);
 
             if (corpus != null)
                 return Ok(corpus.Id);

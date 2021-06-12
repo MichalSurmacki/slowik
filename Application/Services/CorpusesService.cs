@@ -98,7 +98,7 @@ namespace Application.Services
             var xd = await _searchCorpusService.GetCollocationsBySentenceAsync(corpusId, word, direction);
 
             _cacheRepository.InsertIntoCache<CollocationsInfo>(corpusId, word, xd);
-            return await Task.FromResult(xd.CollocationsBySentence);
+            return await Task.FromResult(xd != null ? xd.CollocationsBySentence: null);
         }
 
         public async Task<List<CollocationsMetaData>> GetCollocationsByParagraph_Async(Guid corpusId, string word, int direction)
@@ -110,7 +110,7 @@ namespace Application.Services
             var xd = await _searchCorpusService.GetCollocationsByParagraphAsync(corpusId, word, direction);
 
             _cacheRepository.InsertIntoCache<CollocationsInfo>(corpusId, word, xd);
-            return await Task.FromResult(xd.CollocationsByParagraph); ;
+            return await Task.FromResult(xd != null ? xd.CollocationsByParagraph: null);
         }
 
         public async Task<int> GetWordAppearance_Async(Guid corpusId, string word)
@@ -122,7 +122,7 @@ namespace Application.Services
             var xd = await _searchCorpusService.GetApperancesWithFilenamesAsync(corpusId, word);
 
             _cacheRepository.InsertIntoCache<WordInfo>(corpusId, word, xd);
-            return await Task.FromResult(xd.WordCountInCorpus);
+            return await Task.FromResult(xd != null ? xd.WordCountInCorpus: 0);
         }
 
         public async Task<Dictionary<string, int>> GetWordAppearanceWithFileNames_Async(Guid corpusId, string word)
