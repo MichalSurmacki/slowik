@@ -40,12 +40,8 @@ namespace Api
                     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
             // DependencyInjection.cs in Application and Infrastructure
-            System.Console.WriteLine("Adding application...");
-            services.AddApplication();
-            System.Console.WriteLine("application added");
-            System.Console.WriteLine("Adding infrastructure");
+            services.AddApplication(Configuration);
             services.AddInfrastructure(Configuration);
-            System.Console.WriteLine("infrastructure added");
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
@@ -92,18 +88,6 @@ namespace Api
             {
                 endpoints.MapControllers();
             });
-
-            // // for applying migrations while deploying via docker
-            // using (var serviceScope = app.ApplicationServices.CreateScope())
-            // {
-            //     var context = serviceScope.ServiceProvider.GetService<SlowikContext>();
-            //     if (context.Database.GetPendingMigrations().Any())
-            //     {
-            //         System.Console.WriteLine("migrations");
-            //         context.Database.Migrate();
-            //         System.Console.WriteLine("migrations after");
-            //     }
-            // }
         }
     }
 }

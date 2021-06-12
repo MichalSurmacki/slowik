@@ -17,10 +17,12 @@ namespace Api.Controllers
     public class CorpusesController : ControllerBase
     {
         private ICorpusesService _corpusesService;
+        private IEmailService _emailService;
 
-        public CorpusesController(ICorpusesService corpusesService)
+        public CorpusesController(ICorpusesService corpusesService, IEmailService emailService)
         {
             _corpusesService = corpusesService;
+            _emailService = emailService;
         }
 
         /// <summary>
@@ -31,12 +33,13 @@ namespace Api.Controllers
         /// <response code="400">Invalid file</response>
         /// <response code="500">Oops! Can't recive this corpus right now</response>
         [HttpPost]
-        public async Task<IActionResult> CreateCorpus(IFormFile zipFile)
+        public async Task<IActionResult> CreateCorpus(IFormFile zipFile, string email)
         {
             if (zipFile == null)
                 return BadRequest();
 
             var corpus = await _corpusesService.CreateFromZIP_Async(zipFile);
+            _emailService.SendCorpusGuidViaEmail(email, corpus.Id);
 
             if (corpus != null)
                 return Ok(corpus.Id);

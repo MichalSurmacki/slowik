@@ -19,7 +19,7 @@ namespace Infrastructure
             builder.ConnectionString = configuration.GetConnectionString("SlowikConnection");
             builder.UserID = configuration["UserID"];
             builder.Password = configuration["Password"];
-            builder.DataSource = configuration["Datasource"] ?? "localhost,1433";
+            builder.DataSource = configuration["Datasource"] ?? "localhost";
             builder.InitialCatalog = configuration["InitialCatalog"] ?? "slowikDb";
 
             services.AddDbContext<SlowikContext>(opt => opt.UseSqlServer(builder.ConnectionString));

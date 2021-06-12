@@ -13,7 +13,9 @@ services:
     build: .
     ports:
       - "8080:80"
-    environment: 
+    environment:
+      Email: ${EMAIL}
+      EmailPassword: ${EMAILPASSWORD}
       UserID: "SA"
       Password: "slowik-api123!"
       Datasource: "ms-sql-server,1433"

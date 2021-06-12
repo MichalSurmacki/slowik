@@ -39,31 +39,31 @@ namespace Application.Services
         }
 
         public async Task<CorpusDto> CreateFromZIP_Async(IFormFile zipFile)
-        {      
+        {
             var zipArchive = _archivesService.GetZipArchiveFromIFormFile(zipFile);
-            if(zipArchive == null)
+            if (zipArchive == null)
                 return null;
 
             CorpusDto corpusDto = new CorpusDto();
             var CCLs = new List<string>();
-                foreach (var e in zipArchive.Entries)
-                {
-                    var ccl = await _clarinService.GetCCLStringFromZipArchiveEntry(e);
-                    CCLs.Add(ccl);
-                    var chunkListDto = ParseCCLStringToChunkListDto(ccl);
-                    chunkListDto._chunkListMetaData.OriginFileName = e.Name;
-                    corpusDto.ChunkLists.Add(chunkListDto);
-                }
+            foreach (var e in zipArchive.Entries)
+            {
+                var ccl = await _clarinService.GetCCLStringFromZipArchiveEntry(e);
+                CCLs.Add(ccl);
+                var chunkListDto = ParseCCLStringToChunkListDto(ccl);
+                chunkListDto._chunkListMetaData.OriginFileName = e.Name;
+                corpusDto.ChunkLists.Add(chunkListDto);
+            }
 
-                corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, zipFile.FileName, "anybody");
+            corpusDto.CorpusMetaData = new CorpusMetaDataDto(corpusDto, zipFile.FileName, "anybody");
 
-                // database changes
-                Corpus corpus = _mapper.Map<CorpusDto, Corpus>(corpusDto);
-                _corpusesRepository.CreateCorpus(corpus);
-                _corpusesRepository.SaveChanges();
-                corpusDto.Id = corpus.Id;
+            // database changes
+            Corpus corpus = _mapper.Map<CorpusDto, Corpus>(corpusDto);
+            _corpusesRepository.CreateCorpus(corpus);
+            _corpusesRepository.SaveChanges();
+            corpusDto.Id = corpus.Id;
 
-                return corpusDto;
+            return corpusDto;
         }
 
         public ChunkListDto ParseCCLStringToChunkListDto(string ccl)
@@ -110,7 +110,7 @@ namespace Application.Services
             var xd = await _searchCorpusService.GetCollocationsByParagraphAsync(corpusId, word, direction);
 
             _cacheRepository.InsertIntoCache<CollocationsInfo>(corpusId, word, xd);
-            return await Task.FromResult(xd.CollocationsByParagraph);;
+            return await Task.FromResult(xd.CollocationsByParagraph); ;
         }
 
         public async Task<int> GetWordAppearance_Async(Guid corpusId, string word)
