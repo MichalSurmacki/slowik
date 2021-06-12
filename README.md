@@ -1,11 +1,23 @@
 # slowik
+
 Słowik - profil wyrazów w zadanych korpusach
 
 
-Docker:
+## How to use:
 
-$ docker build -t aspnetapp .
+* (optional) Sending corpus guid as confirmation of processing via email:
 
-$ docker run -d -p 8080:80 -e UserID="DB USER" -e Password="DB PASSWD" --name Api1 aspnetapp
+   Make `.env` file with gmail credentials (EMIAL, EMAILPASSWORD) to gmail account which accept *''Less secure app access''*.
+   
+   Example of `.env` file:
+      
+      EMAIL=exmpl@exmpl.exmpl
+      EMAILPASSWORD=3xMp1!
 
-np: docker run -d -p 8080:80 -e UserID=AS -e Password=AlaMaKOTA --name Api4 aspnetapp -> aplikacja na porcie 8080 
+Prepare and run images:
+
+$ docker-compose up
+
+### Other comments
+
+The `docker-entrypoint.sh` script has to be saved with the **LF** end of line sequence.
