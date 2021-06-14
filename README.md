@@ -1,34 +1,23 @@
-# Słowik
-## Cel projektu 
-Celem projektu jest stworzenie aplikacji internetowej umożliwiającej tworzenie opisu profilów wyrazów w zadanych korpusach.
+# slowik
 
-Każdy profil powinnien być opisany za pomocą:
+Słowik - profil wyrazów w zadanych korpusach
 
-a) ilości wystąpień w korpusie
 
-b) listy nazw (numerów) dokumentów z korpusu, w których pojawił się wyraz (wraz z ilością)
+## How to use:
 
-c) listy kolokacji po lewej  z możliwością uwzględnienia nieprzekraczania zdania.
+* (optional) Sending corpus guid as confirmation of processing via email:
 
-d) listy kolokacji po prawej z możliwością uwzględnienia nieprzekraczania zdania.
+   Make `.env` file with gmail credentials (EMIAL, EMAILPASSWORD) to gmail account which accept *''Less secure app access''*.
+   
+   Example of `.env` file:
+      
+      EMAIL=exmpl@exmpl.exmpl
+      EMAILPASSWORD=3xMp1!
 
-e) czy wyraz jest elementem jakiegoś wielowyrazowca, jeśli tak - jakiego
+Prepare and run images:
 
-f) czy w obrębie zdania wyraz jest poprzedzany jednym z predefiniowanych markerów /jak często/ w jakim sąsiedztwie
+$ docker-compose up
 
-g) WSD - jak często w jakim znaczeniu się pojawia 
+### Other comments
 
-h) jak często pojawia się jako podmiot lub orzeczenie
-
-i) czy bywa elementem jakiś nazw własnych albo sytuacji albo przestrzennych (jeśli tak - lista)
-
-## Zastosowane technologie
-Aplikacja stworzona jest za pomocą platformy ASP.NET przy użyciu wzorca projektowego MVC.
-
-W celu tworzenia profili wyrazów w zadanych korpusach wykorzystano platformę https://ws.clarin-pl.eu/.
-
-## Instalacja
-
-Docker
-## Przykład użycia
-
+The `docker-entrypoint.sh` script has to be saved with the **LF** end of line sequence.
